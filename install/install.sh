@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-MYCOW_REPO_URL="https://github.com/YOUR_ORG/mycow/archive/refs/heads/main.zip"
+MYCOW_REPO_URL="https://github.com/andreasozzo/MyCow/archive/refs/heads/main.zip"
 INSTALL_DIR="$HOME/MyCow"
 VENV_DIR="$INSTALL_DIR/venv"
 MIN_PYTHON_MINOR=11  # 3.11+

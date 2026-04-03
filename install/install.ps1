@@ -10,7 +10,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$MYCOW_REPO_URL = "https://github.com/YOUR_ORG/mycow/archive/refs/heads/main.zip"
+$MYCOW_REPO_URL = "https://github.com/andreasozzo/MyCow/archive/refs/heads/main.zip"
 $INSTALL_DIR    = Join-Path $HOME "MyCow"
 $VENV_DIR       = Join-Path $INSTALL_DIR "venv"
 $MIN_PYTHON     = [Version]"3.11"
