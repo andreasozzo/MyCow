@@ -1,0 +1,26 @@
+name: test-agent
+enabled: true
+heartbeat: 1800
+heartbeat_model: claude-haiku-4-5-20251001
+telegram_chat_id: ""
+
+permissions:
+  bash: false
+  internet: true
+  write_outside_dir: false
+  telegram_without_approval: true
+
+crons:
+  - id: news-morning
+    schedule: "0 8 * * *"
+    model: claude-haiku-4-5-20251001
+    prompt: >
+      Cerca la notizia piu' importante di oggi. Solo due righe.
+      Scrivila in output.txt nella tua cartella (sovrascrivila).
+
+  - id: news-evening
+    schedule: "0 18 * * *"
+    model: claude-sonnet-4-6
+    prompt: >
+      Fai un riassunto delle notizie principali della giornata.
+      Appendilo a output.txt con intestazione "=== SERA ===".

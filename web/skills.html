@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCow — Skills</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --color-bg: #0F1117; --color-surface: #1A1D27; --color-surface-2: #22263A;
+    --color-border: #2A2D3E; --color-primary: #2D6A4F; --color-primary-light: #52B788;
+    --color-primary-pale: #1B4D3E; --color-text-primary: #F0F0F0;
+    --color-text-secondary: #8892A4; --color-text-muted: #4A5568;
+    --color-success: #52B788; --color-warning: #F6AD55; --color-error: #FC8181;
+    --color-info: #63B3ED;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
+  }
+  body { background: var(--color-bg); color: var(--color-text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.5; min-height: 100vh; }
+
+  .header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--color-surface); border-bottom: 1px solid var(--color-border); height: 56px; display: flex; align-items: center; padding: 0 var(--space-6); gap: var(--space-4); }
+  .header-logo { font-size: 16px; font-weight: 700; color: var(--color-text-primary); text-decoration: none; display: flex; align-items: center; gap: var(--space-2); }
+  .header-nav { display: flex; gap: var(--space-1); }
+  .nav-link { padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--color-text-secondary); text-decoration: none; font-size: 13px; transition: color 0.15s, background 0.15s; }
+  .nav-link:hover { color: var(--color-text-primary); background: var(--color-surface-2); }
+  .nav-link.active { color: var(--color-primary-light); background: var(--color-primary-pale); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
+  .daemon-badge { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; color: var(--color-text-secondary); }
+  .daemon-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-text-muted); transition: background 0.3s; }
+  .daemon-dot.online { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+  .daemon-dot.offline { background: var(--color-error); }
+
+  .btn { padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); border: none; cursor: pointer; font-size: 13px; font-family: inherit; transition: opacity 0.15s, transform 0.1s; display: inline-flex; align-items: center; gap: var(--space-1); }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+  .btn-ghost:hover { color: var(--color-text-primary); border-color: var(--color-text-muted); }
+  .btn-danger { background: #7B1818; color: var(--color-error); }
+
+  .main { padding-top: 56px; }
+  .container { max-width: 960px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-8); }
+  .page-title { font-size: 20px; font-weight: 600; }
+  .page-subtitle { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
+
+  .section-title { font-size: 13px; font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-4); padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-border); }
+
+  .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-8); }
+
+  .skill-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+  .skill-card.available { border-style: dashed; opacity: 0.8; }
+  .skill-card:hover { border-color: var(--color-primary-light); opacity: 1; }
+  .skill-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); }
+  .skill-name { font-size: 14px; font-weight: 600; }
+  .skill-version { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
+  .skill-desc { font-size: 13px; color: var(--color-text-secondary); }
+  .skill-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-top: auto; }
+  .env-warn { font-size: 11px; color: var(--color-warning); }
+  .badge-installed { background: var(--color-primary-pale); color: var(--color-primary-light); font-size: 11px; padding: 2px 8px; border-radius: var(--radius-sm); }
+
+  .agents-section { margin-bottom: var(--space-8); }
+  .agent-skill-row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-sm); margin-bottom: var(--space-2); }
+  .agent-skill-row:last-child { margin-bottom: 0; }
+  .agent-name { font-size: 13px; font-weight: 500; }
+  .agent-skills-badges { display: flex; flex-wrap: wrap; gap: var(--space-1); flex: 1; margin: 0 var(--space-3); }
+  .badge-skill { background: var(--color-surface-2); color: var(--color-info); font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 4px; }
+  .badge-skill .remove-skill { cursor: pointer; color: var(--color-text-muted); font-size: 10px; }
+  .badge-skill .remove-skill:hover { color: var(--color-error); }
+
+  .empty-state { text-align: center; padding: var(--space-8); color: var(--color-text-secondary); font-size: 13px; }
+
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--color-border); border-top-color: var(--color-primary-light); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast { position: fixed; bottom: var(--space-6); right: var(--space-6); background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: 13px; z-index: 300; transform: translateY(20px); opacity: 0; transition: transform 0.2s, opacity 0.2s; pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--color-success); color: var(--color-success); }
+  .toast.error { border-color: var(--color-error); color: var(--color-error); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="/" class="header-logo">🐄 MyCow</a>
+  <nav class="header-nav">
+    <a href="/" class="nav-link">Dashboard</a>
+    <a href="/skills.html" class="nav-link active">Skills</a>
+    <a href="/settings.html" class="nav-link">Settings</a>
+  </nav>
+  <div class="header-right">
+    <div class="daemon-badge">
+      <div class="daemon-dot" id="daemonDot"></div>
+      <span id="daemonLabel">Connessione...</span>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Skills</div>
+        <div class="page-subtitle">Installa e gestisci le skill degli agenti</div>
+      </div>
+    </div>
+
+    <div id="content"><div class="empty-state"><div class="spinner"></div></div></div>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let allData = { installed: [], available: [] };
+  let agents = [];
+
+  function showToast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.className = `toast show ${type}`;
+    setTimeout(() => el.className = 'toast', 2500);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderSkillCard(skill, isInstalled) {
+    const envOk = !skill.requires_env || skill.requires_env.length === 0;
+    const envWarn = !envOk ? `<div class="env-warn">⚠ Env richieste: ${skill.requires_env.join(', ')}</div>` : '';
+    const action = isInstalled
+      ? `<button class="btn btn-danger" onclick="uninstallSkill('${skill.name}')">Disinstalla</button>`
+      : `<button class="btn btn-primary" onclick="installSkill('${skill.name}')">+ Installa</button>`;
+    const badge = isInstalled ? `<span class="badge-installed">Installata</span>` : '';
+
+    return `
+      <div class="skill-card ${isInstalled ? '' : 'available'}" id="skill-card-${skill.name}">
+        <div class="skill-header">
+          <div>
+            <div class="skill-name">${escHtml(skill.name)}</div>
+            <div class="skill-version">${escHtml(skill.version || '')}</div>
+          </div>
+          ${badge}
+        </div>
+        <div class="skill-desc">${escHtml(skill.description || 'Nessuna descrizione')}</div>
+        ${envWarn}
+        <div class="skill-footer">${action}</div>
+      </div>`;
+  }
+
+  function renderAgentSkills() {
+    if (!agents.length) return '';
+    const rows = agents.map(a => {
+      const skills = a.skills || [];
+      const badges = skills.map(s => `
+        <span class="badge-skill">
+          ${escHtml(s)}
+          <span class="remove-skill" onclick="removeSkillFromAgent('${a.name}','${s}')" title="Rimuovi">✕</span>
+        </span>`).join('');
+      const addOptions = allData.installed
+        .filter(sk => !skills.includes(sk.name))
+        .map(sk => `<option value="${sk.name}">${sk.name}</option>`).join('');
+      const addSelect = addOptions
+        ? `<select class="add-skill-select" style="background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);color:var(--color-text-secondary);font-size:12px;padding:2px 6px;cursor:pointer" onchange="addSkillToAgent('${a.name}',this)">
+             <option value="">+ Aggiungi skill</option>${addOptions}
+           </select>`
+        : '';
+      return `
+        <div class="agent-skill-row">
+          <div class="agent-name">${escHtml(a.name)}</div>
+          <div class="agent-skills-badges">${badges || '<span style="color:var(--color-text-muted);font-size:12px">Nessuna skill</span>'}</div>
+          ${addSelect}
+        </div>`;
+    }).join('');
+    return `
+      <div class="agents-section">
+        <div class="section-title">Skill per agente</div>
+        ${rows}
+      </div>`;
+  }
+
+  function render() {
+    const { installed, available } = allData;
+    let html = '';
+
+    html += `<div class="section-title">Installate (${installed.length})</div>`;
+    html += installed.length
+      ? `<div class="skills-grid">${installed.map(s => renderSkillCard(s, true)).join('')}</div>`
+      : `<div class="empty-state" style="margin-bottom:var(--space-8)">Nessuna skill installata.</div>`;
+
+    html += `<div class="section-title">Disponibili (${available.length})</div>`;
+    html += available.length
+      ? `<div class="skills-grid">${available.map(s => renderSkillCard(s, false)).join('')}</div>`
+      : `<div class="empty-state" style="margin-bottom:var(--space-8)">Tutte le skill del registry sono installate.</div>`;
+
+    html += renderAgentSkills();
+    document.getElementById('content').innerHTML = html;
+  }
+
+  async function fetchData() {
+    const [skillsRes, agentsRes] = await Promise.all([
+      fetch('/api/skills'),
+      fetch('/api/agents'),
+    ]);
+    allData = await skillsRes.json();
+    agents = await agentsRes.json();
+    render();
+  }
+
+  async function installSkill(name) {
+    const card = document.getElementById(`skill-card-${name}`);
+    if (card) card.style.opacity = '0.5';
+    try {
+      const res = await fetch('/api/skills/install', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name}),
+      });
+      const data = await res.json();
+      if (res.ok) { showToast(`Skill '${name}' installata`, 'success'); await fetchData(); }
+      else showToast(data.message || 'Errore', 'error');
+    } catch { showToast('Errore di rete', 'error'); }
+    if (card) card.style.opacity = '';
+  }
+
+  async function uninstallSkill(name) {
+    if (!confirm(`Disinstallare la skill '${name}'?`)) return;
+    try {
+      const res = await fetch(`/api/skills/${name}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) { showToast(`Skill '${name}' disinstallata`, 'success'); await fetchData(); }
+      else showToast(data.message || 'Errore', 'error');
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  async function addSkillToAgent(agentName, select) {
+    const skill = select.value;
+    if (!skill) return;
+    select.value = '';
+    try {
+      const res = await fetch(`/api/agents/${agentName}/skills/${skill}`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) { showToast(`Skill aggiunta a '${agentName}'`, 'success'); await fetchData(); }
+      else showToast(data.message || 'Errore', 'error');
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  async function removeSkillFromAgent(agentName, skill) {
+    try {
+      const res = await fetch(`/api/agents/${agentName}/skills/${skill}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok) { showToast(`Skill rimossa da '${agentName}'`, 'success'); await fetchData(); }
+      else showToast(data.message || 'Errore', 'error');
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  async function fetchHealth() {
+    try {
+      const res = await fetch('/health');
+      const data = await res.json();
+      document.getElementById('daemonDot').className = 'daemon-dot online';
+      document.getElementById('daemonLabel').textContent = data.emergency_stop ? 'Emergency Stop' : 'Online';
+      if (data.emergency_stop) document.getElementById('daemonDot').className = 'daemon-dot offline';
+    } catch {
+      document.getElementById('daemonDot').className = 'daemon-dot offline';
+      document.getElementById('daemonLabel').textContent = 'Offline';
+    }
+  }
+
+  fetchData();
+  fetchHealth();
+  setInterval(fetchHealth, 10000);
+</script>
+</body>
+</html>

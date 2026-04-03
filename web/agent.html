@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCow — Agente</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-bg: #0F1117;
+    --color-surface: #1A1D27;
+    --color-surface-2: #22263A;
+    --color-border: #2A2D3E;
+    --color-primary: #2D6A4F;
+    --color-primary-light: #52B788;
+    --color-primary-pale: #1B4D3E;
+    --color-text-primary: #F0F0F0;
+    --color-text-secondary: #8892A4;
+    --color-text-muted: #4A5568;
+    --color-success: #52B788;
+    --color-warning: #F6AD55;
+    --color-error: #FC8181;
+    --color-info: #63B3ED;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+    --space-6: 24px; --space-8: 32px;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px; line-height: 1.5; min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    height: 56px; display: flex; align-items: center;
+    padding: 0 var(--space-6); gap: var(--space-4);
+  }
+  .header-logo {
+    font-size: 16px; font-weight: 700; color: var(--color-text-primary);
+    text-decoration: none; display: flex; align-items: center; gap: var(--space-2);
+  }
+  .header-nav { display: flex; gap: var(--space-1); }
+  .nav-link {
+    padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+    color: var(--color-text-secondary); text-decoration: none; font-size: 13px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav-link:hover { color: var(--color-text-primary); background: var(--color-surface-2); }
+  .nav-link.active { color: var(--color-primary-light); background: var(--color-primary-pale); }
+  .header-right { display: flex; align-items: center; gap: var(--space-3); margin-left: auto; }
+  .daemon-badge { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; color: var(--color-text-secondary); }
+  .daemon-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-text-muted); transition: background 0.3s; }
+  .daemon-dot.online { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+  .daemon-dot.offline { background: var(--color-error); }
+
+  /* BUTTONS */
+  .btn {
+    padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+    border: none; cursor: pointer; font-size: 13px; font-family: inherit;
+    transition: opacity 0.15s, transform 0.1s;
+    display: inline-flex; align-items: center; gap: var(--space-1);
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-danger { background: #7B1818; color: var(--color-error); }
+  .btn-ghost {
+    background: transparent; color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+  }
+  .btn-ghost:hover { color: var(--color-text-primary); border-color: var(--color-text-muted); }
+  .btn-icon {
+    background: transparent; border: none; color: var(--color-text-secondary);
+    cursor: pointer; padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm); font-size: 13px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .btn-icon:hover { color: var(--color-text-primary); background: var(--color-surface-2); }
+
+  /* MAIN */
+  .main { padding-top: 56px; }
+  .container { max-width: 960px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+
+  /* PAGE HEADER */
+  .page-header {
+    display: flex; align-items: center; gap: var(--space-4);
+    margin-bottom: var(--space-8);
+  }
+  .back-link {
+    color: var(--color-text-secondary); text-decoration: none; font-size: 13px;
+    display: flex; align-items: center; gap: var(--space-1);
+    padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    transition: color 0.15s, background 0.15s;
+  }
+  .back-link:hover { color: var(--color-text-primary); background: var(--color-surface-2); }
+  .page-title { font-size: 20px; font-weight: 600; flex: 1; }
+  .page-actions { display: flex; gap: var(--space-2); }
+
+  /* BADGE */
+  .badge {
+    font-size: 11px; padding: 2px var(--space-2);
+    border-radius: var(--radius-sm); font-weight: 500; white-space: nowrap;
+  }
+  .badge-active { background: #1B4D3E; color: var(--color-success); }
+  .badge-running { background: #4A3000; color: var(--color-warning); }
+  .badge-error { background: #4A1010; color: var(--color-error); }
+  .badge-paused { background: var(--color-surface-2); color: var(--color-text-secondary); }
+  .badge-idle { background: var(--color-surface-2); color: var(--color-text-muted); }
+  .badge-success { background: #1B4D3E; color: var(--color-success); }
+  .badge-timeout { background: #4A3000; color: var(--color-warning); }
+  .badge-skill { background: var(--color-surface-2); color: var(--color-info); font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm); }
+  .badge-perm { background: var(--color-primary-pale); color: var(--color-primary-light); font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm); }
+
+  /* SECTIONS */
+  .section { margin-bottom: var(--space-8); }
+  .section-title {
+    font-size: 13px; font-weight: 600; color: var(--color-text-secondary);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+  }
+  .card + .card { margin-top: var(--space-3); }
+
+  /* CONFIG */
+  .config-label {
+    font-size: 11px; color: var(--color-text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: var(--space-2);
+  }
+  .cron-card {
+    background: var(--color-surface-2);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  .cron-card:last-child { margin-bottom: 0; }
+  .cron-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2); }
+  .cron-id { font-weight: 600; font-size: 13px; }
+  .cron-schedule { font-family: monospace; font-size: 12px; color: var(--color-info); }
+  .cron-model { font-size: 11px; color: var(--color-text-muted); }
+  .cron-prompt {
+    font-size: 12px; color: var(--color-text-secondary);
+    background: var(--color-bg); border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 60px; overflow: hidden;
+    cursor: pointer; transition: max-height 0.2s;
+  }
+  .cron-prompt.expanded { max-height: 300px; }
+
+  .config-row { display: flex; align-items: flex-start; gap: var(--space-6); margin-bottom: var(--space-4); }
+  .config-block { flex: 1; }
+  .hb-row { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; color: var(--color-text-secondary); }
+  .hb-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-muted); }
+  .hb-dot.active { background: var(--color-success); animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(82,183,136,0.4); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(82,183,136,0); }
+  }
+  .pills-row { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+  /* LOGS */
+  .log-toolbar {
+    display: flex; align-items: center; gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+  .filter-btn {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-sm); border: 1px solid var(--color-border);
+    background: transparent; color: var(--color-text-secondary);
+    font-size: 12px; cursor: pointer; transition: all 0.15s;
+  }
+  .filter-btn:hover { background: var(--color-surface-2); color: var(--color-text-primary); }
+  .filter-btn.active { background: var(--color-primary-pale); color: var(--color-primary-light); border-color: var(--color-primary); }
+
+  .log-table { width: 100%; border-collapse: collapse; }
+  .log-table th {
+    text-align: left; font-size: 11px; color: var(--color-text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .log-table td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+    font-size: 12px; color: var(--color-text-secondary);
+  }
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-table tr:hover td { background: var(--color-surface-2); }
+  .log-output {
+    max-width: 400px; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis;
+    cursor: pointer; color: var(--color-text-primary);
+  }
+  .log-output.expanded { white-space: pre-wrap; overflow: visible; }
+  .log-ts { color: var(--color-text-muted); white-space: nowrap; }
+  .log-dur { white-space: nowrap; }
+
+  .pagination {
+    display: flex; align-items: center; gap: var(--space-2);
+    margin-top: var(--space-4); justify-content: center;
+    font-size: 12px; color: var(--color-text-secondary);
+  }
+
+  /* CHAT */
+  .chat-container {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: flex; flex-direction: column;
+    height: 480px;
+  }
+  .chat-messages {
+    flex: 1; overflow-y: auto;
+    padding: var(--space-4);
+    display: flex; flex-direction: column; gap: var(--space-3);
+  }
+  .chat-msg { max-width: 80%; }
+  .chat-msg.user { align-self: flex-end; }
+  .chat-msg.agent { align-self: flex-start; }
+  .chat-bubble {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: 13px; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .chat-msg.user .chat-bubble { background: var(--color-primary); color: #fff; border-bottom-right-radius: var(--radius-sm); }
+  .chat-msg.agent .chat-bubble { background: var(--color-surface-2); color: var(--color-text-primary); border-bottom-left-radius: var(--radius-sm); }
+  .chat-bubble.loading-bubble { background: var(--color-surface-2); color: var(--color-text-muted); display: flex; align-items: center; gap: var(--space-2); }
+  .chat-meta { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; padding: 0 2px; }
+  .chat-msg.user .chat-meta { text-align: right; }
+  .chat-input-area {
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--color-border);
+    display: flex; gap: var(--space-2);
+  }
+  .chat-input {
+    flex: 1; background: var(--color-surface-2);
+    border: 1px solid var(--color-border); border-radius: var(--radius-md);
+    color: var(--color-text-primary); font-family: inherit; font-size: 13px;
+    padding: var(--space-2) var(--space-3); resize: none; height: 40px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .chat-input:focus { border-color: var(--color-primary-light); }
+  .chat-input::placeholder { color: var(--color-text-muted); }
+
+  /* SPINNER */
+  .spinner {
+    display: inline-block; width: 24px; height: 24px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-primary-light);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading { text-align: center; padding: var(--space-8); color: var(--color-text-secondary); }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: var(--space-6); right: var(--space-6);
+    background: var(--color-surface-2); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);
+    font-size: 13px; z-index: 300;
+    transform: translateY(20px); opacity: 0;
+    transition: transform 0.2s, opacity 0.2s; pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--color-success); color: var(--color-success); }
+  .toast.error { border-color: var(--color-error); color: var(--color-error); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <a href="/" class="header-logo">🐄 MyCow</a>
+  <nav class="header-nav">
+    <a href="/" class="nav-link active">Dashboard</a>
+    <a href="/skills.html" class="nav-link">Skills</a>
+    <a href="/settings.html" class="nav-link">Settings</a>
+  </nav>
+  <div class="header-right">
+    <div class="daemon-badge">
+      <div class="daemon-dot" id="daemonDot"></div>
+      <span id="daemonLabel">Connessione...</span>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="container">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <a href="/" class="back-link">← Dashboard</a>
+      <div class="page-title" id="agentTitle">Caricamento...</div>
+      <span id="agentBadge"></span>
+      <div class="page-actions" id="pageActions"></div>
+    </div>
+
+    <div id="mainContent">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const agentName = params.get('name') || '';
+  if (!agentName) location.href = '/';
+
+  let allLogs = [];
+  let logFilter = 'all';
+  let logPage = 0;
+  const PAGE_SIZE = 20;
+
+  // ── Utility ──
+  function timeAgo(isoStr) {
+    if (!isoStr) return 'mai';
+    const d = new Date(isoStr);
+    const secs = Math.floor((Date.now() - d) / 1000);
+    if (secs < 60) return 'ora';
+    if (secs < 3600) return `${Math.floor(secs/60)} min fa`;
+    if (secs < 86400) return `${Math.floor(secs/3600)} ore fa`;
+    return `${Math.floor(secs/86400)} gg fa`;
+  }
+
+  function fmtTs(isoStr) {
+    if (!isoStr) return '—';
+    const d = new Date(isoStr);
+    return d.toLocaleDateString('it-IT', {day:'2-digit',month:'2-digit'}) + ' ' +
+           d.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+  }
+
+  function badgeHtml(status) {
+    const map = {
+      active:  ['badge-active',  'Attivo'],
+      running: ['badge-running', 'In esecuzione'],
+      error:   ['badge-error',   'Errore'],
+      paused:  ['badge-paused',  'In pausa'],
+      idle:    ['badge-idle',    'Inattivo'],
+    };
+    const [cls, label] = map[status] || ['badge-idle', status];
+    return `<span class="badge ${cls}">${label}</span>`;
+  }
+
+  function agentStatus(agent) {
+    if (!agent.enabled) return 'paused';
+    if (agent.last_run && agent.last_run.status === 'error') return 'error';
+    if (agent.crons && agent.crons.some(c => c.status === 'active')) return 'active';
+    if (agent.heartbeat && agent.heartbeat.status === 'active') return 'active';
+    return 'idle';
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showToast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.className = `toast show ${type}`;
+    setTimeout(() => el.className = 'toast', 2500);
+  }
+
+  // ── Render config ──
+  function renderConfig(agent) {
+    const perms = agent.permissions || {};
+    const permLabels = {
+      bash: 'Bash', internet: 'Internet',
+      write_outside_dir: 'Write fuori dir',
+      telegram_without_approval: 'Telegram auto',
+    };
+    const permBadges = Object.entries(permLabels)
+      .filter(([k]) => perms[k])
+      .map(([, label]) => `<span class="badge-perm">${label}</span>`)
+      .join('');
+
+    const cronsHtml = (agent.crons || []).map(c => `
+      <div class="cron-card">
+        <div class="cron-header">
+          <span class="cron-id">${escHtml(c.cron_id || c.id || 'cron')}</span>
+          <span class="cron-schedule">${escHtml(c.schedule || '')}</span>
+          <span class="cron-model">${escHtml(c.model || '')}</span>
+        </div>
+        <div class="cron-prompt" onclick="this.classList.toggle('expanded')">${escHtml((c.prompt || '').trim())}</div>
+      </div>`).join('');
+
+    const hb = agent.heartbeat || {};
+    const hbHtml = hb.interval > 0 ? `
+      <div class="hb-row">
+        <div class="hb-dot ${hb.status === 'active' ? 'active' : ''}"></div>
+        <span>ogni ${Math.floor(hb.interval / 60)} min</span>
+        ${hb.model ? `<span style="color:var(--color-text-muted)">·</span><span>${escHtml(hb.model)}</span>` : ''}
+        <span style="color:var(--color-text-muted)">·</span>
+        <span>ultimo: ${timeAgo(hb.last_tick)}</span>
+      </div>` : '<span style="color:var(--color-text-muted);font-size:12px">Non configurato</span>';
+
+    const skillsHtml = (agent.skills || []).length
+      ? agent.skills.map(s => `<span class="badge-skill">${escHtml(s)}</span>`).join('')
+      : '<span style="color:var(--color-text-muted);font-size:12px">Nessuna skill</span>';
+
+    return `
+      <div class="section">
+        <div class="section-title">Configurazione</div>
+        <div class="card">
+          <div class="config-label">⏰ Cron</div>
+          ${cronsHtml || '<span style="color:var(--color-text-muted);font-size:12px">Nessun cron configurato</span>'}
+        </div>
+        <div class="card">
+          <div class="config-row">
+            <div class="config-block">
+              <div class="config-label">💓 Heartbeat</div>
+              ${hbHtml}
+            </div>
+            <div class="config-block">
+              <div class="config-label">🔒 Permessi</div>
+              <div class="pills-row">${permBadges || '<span style="color:var(--color-text-muted);font-size:12px">Solo lettura</span>'}</div>
+            </div>
+          </div>
+          <div class="config-label" style="margin-top:var(--space-3)">🧩 Skill</div>
+          <div class="pills-row">${skillsHtml}</div>
+        </div>
+      </div>`;
+  }
+
+  // ── Render logs ──
+  function filteredLogs() {
+    if (logFilter === 'all') return allLogs;
+    return allLogs.filter(l => l.trigger === logFilter);
+  }
+
+  function renderLogs() {
+    const logs = filteredLogs();
+    const total = logs.length;
+    const start = logPage * PAGE_SIZE;
+    const page = logs.slice(start, start + PAGE_SIZE);
+
+    const triggers = ['all', 'cron', 'heartbeat', 'chat', 'manual'];
+    const filterBtns = triggers.map(t => `
+      <button class="filter-btn ${logFilter === t ? 'active' : ''}" onclick="setFilter('${t}')">
+        ${t === 'all' ? 'Tutti' : t}
+      </button>`).join('');
+
+    const rows = page.length ? page.map(l => {
+      const statusMap = { success: ['badge-success','✓'], error: ['badge-error','✗'], timeout: ['badge-timeout','⏱'], unknown: ['badge-idle','?'] };
+      const [cls, icon] = statusMap[l.status] || statusMap.unknown;
+      const output = l.output || l.error || '';
+      return `
+        <tr>
+          <td class="log-ts">${fmtTs(l.timestamp)}</td>
+          <td><span class="badge badge-idle" style="font-size:10px">${escHtml(l.trigger || '')}</span></td>
+          <td><span class="badge ${cls}">${icon} ${escHtml(l.status || '')}</span></td>
+          <td class="log-dur">${l.duration_seconds ? l.duration_seconds + 's' : '—'}</td>
+          <td class="log-output" onclick="this.classList.toggle('expanded')" title="Click per espandere">${escHtml(output)}</td>
+        </tr>`;
+    }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--color-text-muted);padding:var(--space-6)">Nessun log</td></tr>`;
+
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    const pagination = total > PAGE_SIZE ? `
+      <div class="pagination">
+        <button class="btn btn-ghost" onclick="goPage(${logPage - 1})" ${logPage === 0 ? 'disabled' : ''}>←</button>
+        <span>${start + 1}–${Math.min(start + PAGE_SIZE, total)} di ${total}</span>
+        <button class="btn btn-ghost" onclick="goPage(${logPage + 1})" ${logPage >= totalPages - 1 ? 'disabled' : ''}>→</button>
+      </div>` : '';
+
+    return `
+      <div class="section">
+        <div class="section-title">Log</div>
+        <div class="log-toolbar">${filterBtns}</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <table class="log-table">
+            <thead><tr>
+              <th>Timestamp</th><th>Trigger</th><th>Stato</th><th>Durata</th><th>Output</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        ${pagination}
+      </div>`;
+  }
+
+  function setFilter(f) { logFilter = f; logPage = 0; rerenderLogs(); }
+  function goPage(p) { logPage = p; rerenderLogs(); }
+
+  function rerenderLogs() {
+    document.getElementById('logsSection').outerHTML = renderLogs().replace('<div class="section">', '<div class="section" id="logsSection">');
+    // re-assign id after replacement
+    document.querySelectorAll('.section')[1].id = 'logsSection';
+  }
+
+  // ── Chat ──
+  let chatPolling = null;
+
+  function renderChat() {
+    return `
+      <div class="section" id="chatSection">
+        <div class="section-title">💬 Chat</div>
+        <div class="chat-container">
+          <div class="chat-messages" id="chatMessages"></div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="chatInput"
+              placeholder="Scrivi un messaggio..."
+              onkeydown="chatKeydown(event)"></textarea>
+            <button class="btn btn-primary" onclick="sendChat()">Invia</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function chatKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  }
+
+  function appendMsg(role, text, ts) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `chat-msg ${role}`;
+    div.innerHTML = `
+      <div class="chat-bubble">${escHtml(text)}</div>
+      <div class="chat-meta">${ts || ''}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  async function loadChatHistory() {
+    try {
+      const r = await fetch(`/api/agents/${agentName}/logs?limit=50`);
+      if (!r.ok) return;
+      const data = await r.json();
+      const entries = Array.isArray(data) ? data : (data.logs || []);
+      const chatLogs = entries
+        .filter(l => l.trigger === 'chat' && l.status === 'success' && l.output)
+        .reverse();
+      chatLogs.forEach(l => {
+        const ts = timeAgo(l.timestamp);
+        if (l.prompt) appendMsg('user', l.prompt, ts);
+        appendMsg('agent', l.output, ts);
+      });
+    } catch(e) {}
+  }
+
+  async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+
+    const now = new Date().toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+    appendMsg('user', text, now);
+
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'chat-msg agent';
+    loadingDiv.innerHTML = `<div class="chat-bubble loading-bubble"><div class="spinner" style="width:16px;height:16px;margin:0;margin-bottom:0"></div> Elaborazione...</div>`;
+    document.getElementById('chatMessages').appendChild(loadingDiv);
+    document.getElementById('chatMessages').scrollTop = 99999;
+
+    const sentAt = new Date().toISOString();
+
+    try {
+      const res = await fetch(`/api/agents/${agentName}/run`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({prompt: text}),
+      });
+      if (!res.ok) {
+        loadingDiv.remove();
+        appendMsg('agent', 'Errore: ' + (await res.json()).message, now);
+        return;
+      }
+    } catch {
+      loadingDiv.remove();
+      appendMsg('agent', 'Errore di rete', now);
+      return;
+    }
+
+    let attempts = 0;
+    const poll = setInterval(async () => {
+      attempts++;
+      if (attempts > 60) {
+        clearInterval(poll);
+        loadingDiv.remove();
+        appendMsg('agent', 'Timeout: nessuna risposta dopo 2 minuti.', '');
+        return;
+      }
+      try {
+        const r = await fetch(`/api/agents/${agentName}/logs?limit=5`);
+        const logs = await r.json();
+        const found = (Array.isArray(logs) ? logs : []).find(l =>
+          l.trigger === 'chat' &&
+          new Date(l.timestamp) >= new Date(sentAt) &&
+          (l.status === 'success' || l.status === 'error')
+        );
+        if (found) {
+          clearInterval(poll);
+          loadingDiv.remove();
+          const replyTs = new Date(found.timestamp).toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+          const reply = found.output || (found.status === 'error' ? `Errore: ${found.error}` : '(nessun output)');
+          appendMsg('agent', reply, replyTs);
+          // Aggiorna log section
+          fetchLogs();
+        }
+      } catch {}
+    }, 2000);
+  }
+
+  // ── Actions ──
+  async function runAgent() {
+    try {
+      const res = await fetch(`/api/agents/${agentName}/run`, { method: 'POST' });
+      showToast(res.ok ? `${agentName} avviato` : 'Errore avvio', res.ok ? 'success' : 'error');
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  async function pauseAgent() {
+    try {
+      await fetch(`/api/agents/${agentName}/pause`, { method: 'POST' });
+      showToast(`${agentName} in pausa`);
+      fetchAgent();
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  async function resumeAgent() {
+    try {
+      await fetch(`/api/agents/${agentName}/resume`, { method: 'POST' });
+      showToast(`${agentName} ripreso`, 'success');
+      fetchAgent();
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  // ── Fetch & render ──
+  async function fetchAgent() {
+    try {
+      const res = await fetch(`/api/agents/${agentName}`);
+      if (!res.ok) { document.getElementById('agentTitle').textContent = 'Agente non trovato'; return; }
+      const agent = await res.json();
+      const status = agentStatus(agent);
+      const isPaused = status === 'paused';
+
+      document.getElementById('agentTitle').textContent = agent.name;
+      document.getElementById('agentBadge').innerHTML = badgeHtml(status);
+      document.getElementById('pageActions').innerHTML = `
+        <button class="btn btn-primary" onclick="runAgent()">▶ Run</button>
+        ${isPaused
+          ? `<button class="btn btn-ghost" onclick="resumeAgent()">▷ Riprendi</button>`
+          : `<button class="btn btn-ghost" onclick="pauseAgent()">⏸ Pausa</button>`}`;
+
+      // Prima render completa
+      if (document.getElementById('mainContent')) {
+        document.getElementById('mainContent').innerHTML =
+          renderConfig(agent) +
+          `<div id="logsSection"></div>` +
+          renderChat();
+        document.getElementById('logsSection').outerHTML = renderLogs().replace('<div class="section">', '<div class="section" id="logsSection">');
+        document.querySelectorAll('.section')[1].id = 'logsSection';
+        document.getElementById('mainContent').removeAttribute('id');
+        loadChatHistory();
+      } else {
+        // Aggiornamento parziale: solo config + badge
+        const configEl = document.querySelector('.section');
+        if (configEl) configEl.outerHTML = renderConfig(agent);
+      }
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  async function fetchLogs() {
+    try {
+      const res = await fetch(`/api/agents/${agentName}/logs?limit=100`);
+      if (!res.ok) return;
+      const data = await res.json();
+      allLogs = Array.isArray(data) ? data : (data.logs || []);
+      const logsEl = document.getElementById('logsSection');
+      if (logsEl) {
+        const newHtml = renderLogs();
+        const tmp = document.createElement('div');
+        tmp.innerHTML = newHtml;
+        const newSection = tmp.firstElementChild;
+        newSection.id = 'logsSection';
+        logsEl.replaceWith(newSection);
+      }
+    } catch(e) {}
+  }
+
+  async function fetchHealth() {
+    try {
+      const res = await fetch('/health');
+      const data = await res.json();
+      document.getElementById('daemonDot').className = 'daemon-dot online';
+      document.getElementById('daemonLabel').textContent = data.emergency_stop ? 'Emergency Stop' : 'Online';
+      if (data.emergency_stop) document.getElementById('daemonDot').className = 'daemon-dot offline';
+    } catch {
+      document.getElementById('daemonDot').className = 'daemon-dot offline';
+      document.getElementById('daemonLabel').textContent = 'Offline';
+    }
+  }
+
+  // ── Init ──
+  document.title = `MyCow — ${agentName}`;
+  fetchAgent();
+  fetchHealth();
+  setInterval(fetchAgent, 5000);
+  setInterval(fetchHealth, 10000);
+  setInterval(fetchLogs, 10000);
+</script>
+</body>
+</html>

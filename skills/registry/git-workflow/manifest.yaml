@@ -1,0 +1,5 @@
+name: git-workflow
+version: 1.0.0
+description: Convenzioni per commit semantici, branch, PR e messaggi git
+requires_env: []
+mcp_server: null

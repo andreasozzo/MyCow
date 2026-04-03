@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(agents/news-monitor/**)",
+      "Read(agents/news-monitor/**)"
+    ]
+  }
+}

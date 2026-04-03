@@ -1,0 +1,28 @@
+name: news-monitor
+enabled: true
+heartbeat: 3600
+heartbeat_model: claude-haiku-4-5-20251001
+telegram_chat_id: ""
+permissions:
+  bash: false
+  internet: true
+  write_outside_dir: false
+  telegram_without_approval: true
+crons:
+  - id: morning-brief
+    schedule: "0 8 * * *"
+    model: claude-haiku-4-5-20251001
+    prompt: >
+      Cerca le 3 notizie piu' importanti di oggi nel mondo e in Italia.
+      Per ogni notizia: titolo, una riga di sintesi, fonte URL.
+      Scrivi il risultato in memory/today.md (sovrascrivilo completamente).
+      Poi scrivi in output il testo formattato da inviare via Telegram.
+
+  - id: evening-recap
+    schedule: "0 18 * * *"
+    model: claude-sonnet-4-6
+    prompt: >
+      Leggi memory/today.md con le notizie del mattino.
+      Cerca aggiornamenti e sviluppi sulle stesse storie.
+      Appendi il recap serale in memory/today.md con intestazione "=== SERA ===".
+      Poi scrivi in output il testo del recap da inviare via Telegram.

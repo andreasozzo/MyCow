@@ -1,0 +1,43 @@
+Business Source License 1.1
+
+Licensor:             Andrea Sozzo (MyCow maintainer)
+Licensed Work:        MyCow — The proactive layer for Claude Code
+Change Date:          Four years from the date of the first public release
+Change License:       MIT
+
+Use Limitation:       The Licensed Work may not be used for Commercial Purposes
+                      without a separate commercial license from the Licensor.
+
+"Commercial Purposes" means any use of the Licensed Work for direct or indirect
+commercial gain, including but not limited to: offering the Licensed Work as a
+hosted service, integrating it into a commercial product, or using it to support
+a revenue-generating business operation.
+
+For personal use, open source projects, internal non-commercial use, and
+educational purposes: free of charge under this license.
+
+For commercial licensing: see COMMERCIAL.md
+
+---
+
+Parameters
+
+Licensor:           Andrea
+Licensed Work:      MyCow
+                    The Licensed Work is (c) 2026 Andrea
+Additional Use
+Grant:              You may use the Licensed Work for non-commercial purposes
+                    including personal projects, research, and educational use.
+Change Date:        Four years from first public release
+Change License:     MIT License
+
+---
+
+Notice
+
+The Business Source License (this document, or the "License") is not an Open
+Source license. However, the Licensed Work will eventually be made available
+under an Open Source License, as stated in this License.
+
+License text copyright (c) 2017 MariaDB Corporation Ab, All Rights Reserved.
+"Business Source License" is a trademark of MariaDB Corporation Ab.

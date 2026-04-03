@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(agents/test-agent/**)",
+      "Read(agents/test-agent/**)"
+    ]
+  }
+}

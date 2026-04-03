@@ -1,0 +1,6 @@
+name: security-first
+version: 1.0.0
+description: Principi di sicurezza non negoziabili per MyCow — least privilege, timeout, sanitizzazione input, secrets management, kill switch
+requires_env: []
+mcp_server: null
+skill_path: ../global/security-first/skill.md

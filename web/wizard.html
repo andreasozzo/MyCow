@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCow — Nuovo Agente</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-bg: #0F1117;
+    --color-surface: #1A1D27;
+    --color-surface-2: #22263A;
+    --color-border: #2A2D3E;
+    --color-primary: #2D6A4F;
+    --color-primary-light: #52B788;
+    --color-primary-pale: #1B4D3E;
+    --color-text-primary: #F0F0F0;
+    --color-text-secondary: #8892A4;
+    --color-text-muted: #4A5568;
+    --color-success: #52B788;
+    --color-warning: #F6AD55;
+    --color-error: #FC8181;
+    --color-info: #63B3ED;
+    --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+    --space-6: 24px; --space-8: 32px;
+  }
+
+  body {
+    background: var(--color-bg); color: var(--color-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px; line-height: 1.5; min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+    height: 56px; display: flex; align-items: center;
+    padding: 0 var(--space-6); gap: var(--space-4);
+  }
+  .header-logo { font-size: 16px; font-weight: 700; color: var(--color-text-primary); text-decoration: none; display: flex; align-items: center; gap: var(--space-2); }
+  .header-nav { display: flex; gap: var(--space-1); }
+  .nav-link { padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--color-text-secondary); text-decoration: none; font-size: 13px; transition: color 0.15s, background 0.15s; }
+  .nav-link:hover { color: var(--color-text-primary); background: var(--color-surface-2); }
+  .nav-link.active { color: var(--color-primary-light); background: var(--color-primary-pale); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
+  .daemon-badge { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; color: var(--color-text-secondary); }
+  .daemon-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-text-muted); transition: background 0.3s; }
+  .daemon-dot.online { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+  .daemon-dot.offline { background: var(--color-error); }
+
+  /* BUTTONS */
+  .btn { padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); border: none; cursor: pointer; font-size: 13px; font-family: inherit; transition: opacity 0.15s, transform 0.1s; display: inline-flex; align-items: center; gap: var(--space-1); }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+  .btn-ghost:hover { color: var(--color-text-primary); border-color: var(--color-text-muted); }
+  .btn-danger-sm { background: transparent; border: 1px solid var(--color-border); color: var(--color-error); font-size: 12px; padding: 2px var(--space-2); border-radius: var(--radius-sm); cursor: pointer; transition: background 0.15s; }
+  .btn-danger-sm:hover { background: #4A1010; }
+
+  /* MAIN */
+  .main { padding-top: 56px; }
+  .container { max-width: 720px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+
+  .page-header { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-8); }
+  .back-link { color: var(--color-text-secondary); text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); border: 1px solid var(--color-border); transition: color 0.15s, background 0.15s; }
+  .back-link:hover { color: var(--color-text-primary); background: var(--color-surface-2); }
+  .page-title { font-size: 20px; font-weight: 600; }
+
+  /* FORM */
+  .form-section { margin-bottom: var(--space-8); }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: var(--space-4); padding-bottom: var(--space-2); border-bottom: 1px solid var(--color-border); }
+
+  .field { margin-bottom: var(--space-4); }
+  .field-row { display: grid; gap: var(--space-3); }
+  .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+  .field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  label { display: block; font-size: 12px; color: var(--color-text-secondary); margin-bottom: var(--space-1); }
+  .hint { font-size: 11px; color: var(--color-text-muted); margin-top: var(--space-1); }
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%; background: var(--color-surface-2);
+    border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+    color: var(--color-text-primary); font-family: inherit; font-size: 13px;
+    padding: var(--space-2) var(--space-3); outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--color-primary-light); }
+  input::placeholder, textarea::placeholder { color: var(--color-text-muted); }
+  select option { background: var(--color-surface-2); }
+  textarea { resize: vertical; min-height: 80px; }
+  input.error, textarea.error { border-color: var(--color-error); }
+  .error-msg { font-size: 11px; color: var(--color-error); margin-top: var(--space-1); }
+
+  /* CHECKBOXES */
+  .checks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+  .check-item { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); background: var(--color-surface-2); border-radius: var(--radius-sm); border: 1px solid var(--color-border); cursor: pointer; transition: border-color 0.15s; }
+  .check-item:hover { border-color: var(--color-primary-light); }
+  .check-item input[type="checkbox"] { accent-color: var(--color-primary-light); width: 14px; height: 14px; cursor: pointer; }
+  .check-label { font-size: 13px; cursor: pointer; }
+  .check-desc { font-size: 11px; color: var(--color-text-muted); }
+
+  /* SKILLS */
+  .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-2); }
+  .skill-item { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-3); background: var(--color-surface-2); border-radius: var(--radius-sm); border: 1px solid var(--color-border); cursor: pointer; transition: border-color 0.15s; }
+  .skill-item:hover { border-color: var(--color-primary-light); }
+  .skill-item.selected { border-color: var(--color-primary-light); background: var(--color-primary-pale); }
+  .skill-item input[type="checkbox"] { accent-color: var(--color-primary-light); margin-top: 2px; cursor: pointer; }
+  .skill-name { font-size: 13px; font-weight: 500; }
+  .skill-desc { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; }
+  .skill-warn { font-size: 11px; color: var(--color-warning); margin-top: 2px; }
+
+  /* CRON CARD */
+  .cron-entry {
+    background: var(--color-surface-2); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); padding: var(--space-4);
+    margin-bottom: var(--space-3);
+  }
+  .cron-entry-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); }
+  .cron-entry-title { font-size: 13px; font-weight: 600; color: var(--color-text-secondary); }
+  .add-cron-btn { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; color: var(--color-primary-light); font-size: 13px; padding: var(--space-2) 0; background: none; border: none; font-family: inherit; }
+  .add-cron-btn:hover { opacity: 0.8; }
+
+  /* SCHEDULE HELPER */
+  .schedule-helper { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-2); }
+  .preset { font-size: 11px; padding: 2px 8px; border-radius: var(--radius-sm); background: var(--color-surface); border: 1px solid var(--color-border); cursor: pointer; color: var(--color-text-muted); transition: all 0.15s; }
+  .preset:hover { color: var(--color-primary-light); border-color: var(--color-primary-light); }
+
+  /* FORM FOOTER */
+  .form-footer { display: flex; justify-content: space-between; align-items: center; padding-top: var(--space-6); border-top: 1px solid var(--color-border); }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: var(--space-6); right: var(--space-6); background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: 13px; z-index: 300; transform: translateY(20px); opacity: 0; transition: transform 0.2s, opacity 0.2s; pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--color-success); color: var(--color-success); }
+  .toast.error { border-color: var(--color-error); color: var(--color-error); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="/" class="header-logo">🐄 MyCow</a>
+  <nav class="header-nav">
+    <a href="/" class="nav-link active">Dashboard</a>
+    <a href="/skills.html" class="nav-link">Skills</a>
+    <a href="/settings.html" class="nav-link">Settings</a>
+  </nav>
+  <div class="header-right">
+    <div class="daemon-badge">
+      <div class="daemon-dot" id="daemonDot"></div>
+      <span id="daemonLabel">Connessione...</span>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="container">
+
+    <div class="page-header">
+      <a href="/" class="back-link">← Dashboard</a>
+      <div class="page-title">Nuovo agente</div>
+    </div>
+
+    <form id="wizardForm" onsubmit="submitForm(event)">
+
+      <!-- IDENTITÀ -->
+      <div class="form-section">
+        <div class="section-title">Identità</div>
+        <div class="field">
+          <label for="agentName">Nome agente *</label>
+          <input type="text" id="agentName" placeholder="es. news-monitor" autocomplete="off"
+            oninput="validateName(this)" pattern="[a-z0-9][a-z0-9\-]{0,48}">
+          <div class="hint">Lowercase, numeri e trattini. Esempio: news-monitor, my-agent-2</div>
+          <div class="error-msg" id="nameError" style="display:none"></div>
+        </div>
+        <div class="field">
+          <label for="telegramChatId">Telegram Chat ID</label>
+          <input type="text" id="telegramChatId" placeholder="es. ">
+          <div class="hint">Lascia vuoto per usare quello globale in .env</div>
+        </div>
+      </div>
+
+      <!-- CRON -->
+      <div class="form-section">
+        <div class="section-title">Schedule (Cron)</div>
+        <div id="cronsContainer"></div>
+        <button type="button" class="add-cron-btn" onclick="addCron()">+ Aggiungi cron</button>
+      </div>
+
+      <!-- HEARTBEAT -->
+      <div class="form-section">
+        <div class="section-title">Heartbeat</div>
+        <div class="field-row cols-2">
+          <div class="field">
+            <label for="hbInterval">Intervallo (minuti, 0 = disabilitato)</label>
+            <input type="number" id="hbInterval" value="0" min="0" max="10080">
+          </div>
+          <div class="field">
+            <label for="hbModel">Modello</label>
+            <select id="hbModel">
+              <option value="">Default</option>
+              <option value="claude-haiku-4-5-20251001">Haiku 4.5 (veloce)</option>
+              <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+              <option value="claude-opus-4-6">Opus 4.6</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" id="hbPromptField" style="display:none">
+          <label for="hbPrompt">Comportamento heartbeat</label>
+          <textarea id="hbPrompt" placeholder="Descrivi cosa deve fare l'agente ad ogni heartbeat..."></textarea>
+          <div class="hint">L'agente decide autonomamente se agire o meno in base a questo prompt.</div>
+        </div>
+      </div>
+
+      <!-- PERMESSI -->
+      <div class="form-section">
+        <div class="section-title">Permessi</div>
+        <div class="checks-grid">
+          <label class="check-item">
+            <input type="checkbox" id="permBash">
+            <div>
+              <div class="check-label">Bash</div>
+              <div class="check-desc">Esegui comandi shell</div>
+            </div>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="permInternet" checked>
+            <div>
+              <div class="check-label">Internet</div>
+              <div class="check-desc">WebSearch e WebFetch</div>
+            </div>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="permWriteOutside">
+            <div>
+              <div class="check-label">Write fuori dir</div>
+              <div class="check-desc">Scrivere file fuori dalla cartella agente</div>
+            </div>
+          </label>
+          <label class="check-item">
+            <input type="checkbox" id="permTelegram">
+            <div>
+              <div class="check-label">Telegram automatico</div>
+              <div class="check-desc">Invia output su Telegram senza conferma</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- SKILL -->
+      <div class="form-section">
+        <div class="section-title">Skill</div>
+        <div id="skillsContainer">
+          <div style="color:var(--color-text-muted);font-size:13px">Caricamento skill...</div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="form-footer">
+        <a href="/" class="btn btn-ghost">Annulla</a>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Crea agente →</button>
+      </div>
+
+    </form>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const MODELS = [
+    { value: '', label: 'Default' },
+    { value: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5 (veloce)' },
+    { value: 'claude-sonnet-4-6', label: 'Sonnet 4.6' },
+    { value: 'claude-opus-4-6', label: 'Opus 4.6' },
+  ];
+  const PRESETS = [
+    { label: 'ogni mattina 8:00', value: '0 8 * * *' },
+    { label: 'ogni sera 18:00',   value: '0 18 * * *' },
+    { label: 'ogni ora',          value: '0 * * * *' },
+    { label: 'ogni 30 min',       value: '*/30 * * * *' },
+    { label: 'ogni lunedì 9:00',  value: '0 9 * * 1' },
+  ];
+
+  let cronCount = 0;
+
+  function showToast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.className = `toast show ${type}`;
+    setTimeout(() => el.className = 'toast', 2500);
+  }
+
+  // ── Name validation ──
+  function validateName(input) {
+    const v = input.value;
+    const err = document.getElementById('nameError');
+    if (!v) { err.style.display = 'none'; input.classList.remove('error'); return true; }
+    if (!/^[a-z0-9][a-z0-9\-]{0,48}$/.test(v)) {
+      err.textContent = 'Solo lowercase, numeri e trattini. Deve iniziare con lettera o numero.';
+      err.style.display = 'block'; input.classList.add('error'); return false;
+    }
+    err.style.display = 'none'; input.classList.remove('error'); return true;
+  }
+
+  // ── Crons ──
+  function addCron(data = {}) {
+    const idx = cronCount++;
+    const container = document.getElementById('cronsContainer');
+    const div = document.createElement('div');
+    div.className = 'cron-entry'; div.id = `cron-${idx}`;
+
+    const modelOpts = MODELS.map(m =>
+      `<option value="${m.value}" ${m.value === (data.model || '') ? 'selected' : ''}>${m.label}</option>`
+    ).join('');
+
+    const presetBtns = PRESETS.map(p =>
+      `<button type="button" class="preset" onclick="setSchedule(${idx},'${p.value}')">${p.label}</button>`
+    ).join('');
+
+    div.innerHTML = `
+      <div class="cron-entry-header">
+        <span class="cron-entry-title">Cron #${idx + 1}</span>
+        <button type="button" class="btn-danger-sm" onclick="removeCron(${idx})">✕ Rimuovi</button>
+      </div>
+      <div class="field-row cols-3">
+        <div class="field">
+          <label>ID *</label>
+          <input type="text" id="cronId-${idx}" value="${data.id || ''}" placeholder="es. morning-news">
+        </div>
+        <div class="field">
+          <label>Schedule (cron) *</label>
+          <input type="text" id="cronSchedule-${idx}" value="${data.schedule || ''}" placeholder="0 8 * * *">
+        </div>
+        <div class="field">
+          <label>Modello</label>
+          <select id="cronModel-${idx}">${modelOpts}</select>
+        </div>
+      </div>
+      <div class="schedule-helper">${presetBtns}</div>
+      <div class="field" style="margin-top:var(--space-3)">
+        <label>Prompt *</label>
+        <textarea id="cronPrompt-${idx}" placeholder="Cosa deve fare l'agente in questo cron...">${data.prompt || ''}</textarea>
+      </div>`;
+    container.appendChild(div);
+  }
+
+  function removeCron(idx) {
+    document.getElementById(`cron-${idx}`)?.remove();
+  }
+
+  function setSchedule(idx, value) {
+    document.getElementById(`cronSchedule-${idx}`).value = value;
+  }
+
+  // ── Heartbeat toggle ──
+  document.getElementById('hbInterval').addEventListener('input', function() {
+    document.getElementById('hbPromptField').style.display = parseInt(this.value) > 0 ? 'block' : 'none';
+  });
+
+  // ── Skills ──
+  async function loadSkills() {
+    try {
+      const res = await fetch('/api/skills');
+      const data = await res.json();
+      const installed = data.installed || [];
+      const container = document.getElementById('skillsContainer');
+      if (!installed.length) {
+        container.innerHTML = '<div style="color:var(--color-text-muted);font-size:13px">Nessuna skill installata. <a href="/skills.html" style="color:var(--color-primary-light)">Vai alle skill →</a></div>';
+        return;
+      }
+      container.innerHTML = `<div class="skills-grid">${installed.map(s => {
+        const warn = (s.missing_env || []).length
+          ? `<div class="skill-warn">⚠ Env mancanti: ${s.missing_env.join(', ')}</div>` : '';
+        return `
+          <label class="skill-item" id="skill-item-${s.name}" onclick="toggleSkill(this)">
+            <input type="checkbox" name="skill" value="${s.name}" style="pointer-events:none">
+            <div>
+              <div class="skill-name">${s.name}</div>
+              <div class="skill-desc">${s.description || ''}</div>
+              ${warn}
+            </div>
+          </label>`;
+      }).join('')}</div>`;
+    } catch(e) {
+      document.getElementById('skillsContainer').innerHTML = '<div style="color:var(--color-text-muted);font-size:13px">Errore caricamento skill.</div>';
+    }
+  }
+
+  function toggleSkill(label) {
+    const cb = label.querySelector('input[type="checkbox"]');
+    cb.checked = !cb.checked;
+    label.classList.toggle('selected', cb.checked);
+  }
+
+  // ── Submit ──
+  async function submitForm(e) {
+    e.preventDefault();
+
+    const name = document.getElementById('agentName').value.trim();
+    if (!validateName(document.getElementById('agentName')) || !name) {
+      document.getElementById('agentName').focus();
+      return;
+    }
+
+    // Raccogli crons
+    const crons = [];
+    document.querySelectorAll('.cron-entry').forEach(el => {
+      const idx = el.id.replace('cron-', '');
+      const id = document.getElementById(`cronId-${idx}`)?.value.trim();
+      const schedule = document.getElementById(`cronSchedule-${idx}`)?.value.trim();
+      const model = document.getElementById(`cronModel-${idx}`)?.value;
+      const prompt = document.getElementById(`cronPrompt-${idx}`)?.value.trim();
+      if (id && schedule && prompt) crons.push({ id, schedule, model: model || null, prompt });
+    });
+
+    const hbInterval = parseInt(document.getElementById('hbInterval').value) || 0;
+    const payload = {
+      name,
+      telegram_chat_id: document.getElementById('telegramChatId').value.trim() || null,
+      crons,
+      heartbeat: hbInterval * 60,
+      heartbeat_model: document.getElementById('hbModel').value || null,
+      heartbeat_prompt: document.getElementById('hbPrompt').value.trim() || '',
+      permissions: {
+        bash: document.getElementById('permBash').checked,
+        internet: document.getElementById('permInternet').checked,
+        write_outside_dir: document.getElementById('permWriteOutside').checked,
+        telegram_without_approval: document.getElementById('permTelegram').checked,
+      },
+      skills: Array.from(document.querySelectorAll('input[name="skill"]:checked')).map(cb => cb.value),
+    };
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'Creazione...';
+
+    try {
+      const res = await fetch('/api/agents/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Agente '${name}' creato!`, 'success');
+        setTimeout(() => location.href = `/agent.html?name=${name}`, 800);
+      } else {
+        showToast(data.message || 'Errore creazione', 'error');
+        btn.disabled = false; btn.textContent = 'Crea agente →';
+      }
+    } catch {
+      showToast('Errore di rete', 'error');
+      btn.disabled = false; btn.textContent = 'Crea agente →';
+    }
+  }
+
+  // ── Health ──
+  async function fetchHealth() {
+    try {
+      const res = await fetch('/health');
+      const data = await res.json();
+      document.getElementById('daemonDot').className = 'daemon-dot online';
+      document.getElementById('daemonLabel').textContent = data.emergency_stop ? 'Emergency Stop' : 'Online';
+      if (data.emergency_stop) document.getElementById('daemonDot').className = 'daemon-dot offline';
+    } catch {
+      document.getElementById('daemonDot').className = 'daemon-dot offline';
+      document.getElementById('daemonLabel').textContent = 'Offline';
+    }
+  }
+
+  // ── Init ──
+  addCron(); // parte con un cron vuoto
+  loadSkills();
+  fetchHealth();
+  setInterval(fetchHealth, 10000);
+</script>
+</body>
+</html>

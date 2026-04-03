@@ -1,0 +1,5 @@
+name: web-fetch
+version: 1.0.0
+description: Scarica e legge pagine web estraendo testo pulito con requests + BeautifulSoup
+requires_env: []
+mcp_server: null

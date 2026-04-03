@@ -1,0 +1,6 @@
+name: ux-premium
+version: 1.0.0
+description: Design system e linee guida UX per interfacce MyCow — dark theme, palette, tipografia, componenti standard, pattern da evitare
+requires_env: []
+mcp_server: null
+skill_path: ../global/ux-premium/skill.md

@@ -1,0 +1,8 @@
+apscheduler>=3.10.0
+python-telegram-bot>=20.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+python-dotenv>=1.0.0
+flask>=3.0.0
+click>=8.1.0
+pyyaml>=6.0

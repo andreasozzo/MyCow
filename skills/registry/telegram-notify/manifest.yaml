@@ -1,0 +1,7 @@
+name: telegram-notify
+version: 1.0.0
+description: Invia messaggi Telegram tramite il bridge MyCow
+requires_env:
+  - TELEGRAM_BOT_TOKEN
+  - TELEGRAM_CHAT_ID
+mcp_server: null

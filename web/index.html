@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCow — Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-bg: #0F1117;
+    --color-surface: #1A1D27;
+    --color-surface-2: #22263A;
+    --color-border: #2A2D3E;
+    --color-primary: #2D6A4F;
+    --color-primary-light: #52B788;
+    --color-primary-pale: #1B4D3E;
+    --color-text-primary: #F0F0F0;
+    --color-text-secondary: #8892A4;
+    --color-text-muted: #4A5568;
+    --color-success: #52B788;
+    --color-warning: #F6AD55;
+    --color-error: #FC8181;
+    --color-info: #63B3ED;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-6: 24px;
+    --space-8: 32px;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    height: 56px;
+    display: flex; align-items: center;
+    padding: 0 var(--space-6);
+    gap: var(--space-6);
+  }
+  .header-logo {
+    font-size: 16px; font-weight: 700; color: var(--color-text-primary);
+    text-decoration: none; display: flex; align-items: center; gap: var(--space-2);
+    white-space: nowrap;
+  }
+  .header-nav { display: flex; gap: var(--space-1); flex: 1; }
+  .nav-link {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    text-decoration: none; font-size: 13px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav-link:hover { color: var(--color-text-primary); background: var(--color-surface-2); }
+  .nav-link.active { color: var(--color-primary-light); background: var(--color-primary-pale); }
+
+  .header-right { display: flex; align-items: center; gap: var(--space-3); }
+
+  .daemon-badge {
+    display: flex; align-items: center; gap: var(--space-2);
+    font-size: 12px; color: var(--color-text-secondary);
+  }
+  .daemon-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--color-text-muted);
+    transition: background 0.3s;
+  }
+  .daemon-dot.online { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+  .daemon-dot.offline { background: var(--color-error); }
+
+  .btn {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    border: none; cursor: pointer;
+    font-size: 13px; font-family: inherit;
+    transition: opacity 0.15s, transform 0.1s;
+    display: inline-flex; align-items: center; gap: var(--space-1);
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-danger { background: #7B1818; color: var(--color-error); }
+  .btn-ghost {
+    background: transparent; color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+  }
+  .btn-ghost:hover { color: var(--color-text-primary); border-color: var(--color-text-muted); }
+  .btn-icon {
+    background: transparent; border: none;
+    color: var(--color-text-secondary); cursor: pointer;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .btn-icon:hover { color: var(--color-text-primary); background: var(--color-surface-2); }
+
+  /* ── MAIN ── */
+  .main { padding-top: 56px; }
+  .container { max-width: 1400px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: var(--space-8);
+  }
+  .page-title { font-size: 20px; font-weight: 600; }
+  .page-subtitle { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
+
+  /* ── GRID AGENTI ── */
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: var(--space-4);
+  }
+
+  /* ── CARD AGENTE ── */
+  .agent-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-text-muted);
+    padding: var(--space-4);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    display: flex; flex-direction: column; gap: var(--space-3);
+  }
+  .agent-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+  .agent-card.status-active { border-left-color: var(--color-success); }
+  .agent-card.status-running { border-left-color: var(--color-warning); }
+  .agent-card.status-error { border-left-color: var(--color-error); }
+  .agent-card.status-paused { border-left-color: var(--color-text-muted); }
+
+  .card-header { display: flex; align-items: center; justify-content: space-between; }
+  .card-name { font-size: 15px; font-weight: 600; }
+  .badge {
+    font-size: 11px; padding: 2px var(--space-2);
+    border-radius: var(--radius-sm); font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge-active { background: #1B4D3E; color: var(--color-success); }
+  .badge-running { background: #4A3000; color: var(--color-warning); }
+  .badge-error { background: #4A1010; color: var(--color-error); }
+  .badge-paused { background: var(--color-surface-2); color: var(--color-text-secondary); }
+  .badge-idle { background: var(--color-surface-2); color: var(--color-text-muted); }
+  .badge-skill {
+    background: var(--color-surface-2); color: var(--color-info);
+    font-size: 11px; padding: 2px 6px; border-radius: var(--radius-sm);
+  }
+
+  .card-section {
+    background: var(--color-surface-2);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3);
+  }
+  .section-label {
+    font-size: 11px; color: var(--color-text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: var(--space-2);
+    display: flex; align-items: center; gap: var(--space-1);
+  }
+  .cron-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 2px 0; font-size: 12px; color: var(--color-text-secondary);
+  }
+  .cron-id { color: var(--color-text-primary); font-weight: 500; }
+  .cron-meta { font-size: 11px; color: var(--color-text-muted); }
+
+  .hb-row { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; color: var(--color-text-secondary); }
+  .hb-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--color-text-muted);
+  }
+  .hb-dot.active {
+    background: var(--color-success);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(82,183,136,0.4); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(82,183,136,0); }
+  }
+
+  .skills-row { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+
+  .card-actions {
+    display: flex; gap: var(--space-2); align-items: center;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-border);
+  }
+  .card-actions .spacer { flex: 1; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center; padding: var(--space-12) var(--space-6);
+    color: var(--color-text-secondary);
+  }
+  .empty-icon { font-size: 48px; margin-bottom: var(--space-4); opacity: 0.5; }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--color-text-primary); margin-bottom: var(--space-2); }
+  .empty-text { font-size: 13px; margin-bottom: var(--space-6); }
+
+  /* ── LOADING ── */
+  .loading {
+    text-align: center; padding: var(--space-12);
+    color: var(--color-text-secondary);
+  }
+  .spinner {
+    display: inline-block; width: 24px; height: 24px;
+    border: 2px solid var(--color-border);
+    border-top-color: var(--color-primary-light);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: var(--space-4);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── MODAL ── */
+  .overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.7);
+    align-items: center; justify-content: center;
+  }
+  .overlay.open { display: flex; }
+
+  .modal {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    max-width: 420px; width: 90%;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: var(--space-2); }
+  .modal-text { font-size: 13px; color: var(--color-text-secondary); margin-bottom: var(--space-6); }
+  .modal-actions { display: flex; gap: var(--space-3); justify-content: flex-end; }
+
+  /* ── CHAT ── */
+  .chat-panel {
+    position: fixed; right: 0; top: 56px; bottom: 0;
+    width: 420px; z-index: 150;
+    background: var(--color-surface);
+    border-left: 1px solid var(--color-border);
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+  }
+  .chat-panel.open { transform: translateX(0); }
+
+  .chat-header {
+    padding: var(--space-4) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chat-title { font-size: 14px; font-weight: 600; }
+  .chat-agent { font-size: 12px; color: var(--color-primary-light); }
+
+  .chat-messages {
+    flex: 1; overflow-y: auto;
+    padding: var(--space-4);
+    display: flex; flex-direction: column; gap: var(--space-3);
+  }
+  .chat-msg { max-width: 85%; }
+  .chat-msg.user { align-self: flex-end; }
+  .chat-msg.agent { align-self: flex-start; }
+  .chat-bubble {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: 13px; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .chat-msg.user .chat-bubble {
+    background: var(--color-primary);
+    color: #fff;
+    border-bottom-right-radius: var(--radius-sm);
+  }
+  .chat-msg.agent .chat-bubble {
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+    border-bottom-left-radius: var(--radius-sm);
+  }
+  .chat-bubble.loading-bubble {
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+    display: flex; align-items: center; gap: var(--space-2);
+  }
+  .chat-meta { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; padding: 0 2px; }
+  .chat-msg.user .chat-meta { text-align: right; }
+
+  .chat-input-area {
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--color-border);
+    display: flex; gap: var(--space-2);
+  }
+  .chat-input {
+    flex: 1;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-primary);
+    font-family: inherit; font-size: 13px;
+    padding: var(--space-2) var(--space-3);
+    resize: none; height: 40px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .chat-input:focus { border-color: var(--color-primary-light); }
+  .chat-input::placeholder { color: var(--color-text-muted); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: var(--space-6); right: var(--space-6);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    font-size: 13px; z-index: 300;
+    transform: translateY(20px); opacity: 0;
+    transition: transform 0.2s, opacity 0.2s;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--color-success); color: var(--color-success); }
+  .toast.error { border-color: var(--color-error); color: var(--color-error); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <a href="/" class="header-logo">🐄 MyCow</a>
+  <nav class="header-nav">
+    <a href="/" class="nav-link active">Dashboard</a>
+    <a href="/skills.html" class="nav-link">Skills</a>
+    <a href="/settings.html" class="nav-link">Settings</a>
+  </nav>
+  <div class="header-right">
+    <div class="daemon-badge">
+      <div class="daemon-dot" id="daemonDot"></div>
+      <span id="daemonLabel">Connessione...</span>
+    </div>
+    <button class="btn btn-danger" onclick="openStopAll()">⬛ Stop All</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Agenti</div>
+        <div class="page-subtitle" id="agentCount">Caricamento...</div>
+      </div>
+      <a href="/wizard.html" class="btn btn-primary">+ Nuovo agente</a>
+    </div>
+    <div id="agentsContainer">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div>Caricamento agenti...</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- MODAL STOP ALL -->
+<div class="overlay" id="stopAllOverlay" onclick="closeStopAll(event)">
+  <div class="modal">
+    <div class="modal-title">Fermare tutti gli agenti?</div>
+    <div class="modal-text">
+      Questa azione crea il file <code>EMERGENCY_STOP</code> e interrompe immediatamente tutti i cron e heartbeat attivi.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeStopAll()">Annulla</button>
+      <button class="btn btn-danger" onclick="confirmStopAll()">⬛ Ferma tutto</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT PANEL -->
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <div>
+      <div class="chat-title">Chat</div>
+      <div class="chat-agent" id="chatAgentName"></div>
+    </div>
+    <button class="btn-icon" onclick="closeChat()">✕</button>
+  </div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-area">
+    <textarea class="chat-input" id="chatInput"
+      placeholder="Scrivi un messaggio..."
+      onkeydown="chatKeydown(event)"></textarea>
+    <button class="btn btn-primary" onclick="sendChat()">Invia</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Stato globale ──
+  let agents = [];
+  let chatAgent = null;
+  let chatPolling = null;
+  let lastPollTimestamp = null;
+
+  // ── Utility ──
+  function timeAgo(isoStr) {
+    if (!isoStr) return 'mai';
+    const d = new Date(isoStr);
+    const secs = Math.floor((Date.now() - d) / 1000);
+    if (secs < 60) return 'ora';
+    if (secs < 3600) return `${Math.floor(secs/60)} min fa`;
+    if (secs < 86400) return `${Math.floor(secs/3600)} ore fa`;
+    return `${Math.floor(secs/86400)} gg fa`;
+  }
+
+  function fmtNext(isoStr) {
+    if (!isoStr) return '—';
+    const d = new Date(isoStr);
+    const now = new Date();
+    const diff = d - now;
+    if (diff < 60000) return 'tra poco';
+    if (diff < 3600000) return `tra ${Math.floor(diff/60000)} min`;
+    if (diff < 86400000) return `oggi ${d.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'})}`;
+    const tom = new Date(now); tom.setDate(tom.getDate()+1);
+    if (d.toDateString() === tom.toDateString())
+      return `domani ${d.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'})}`;
+    return d.toLocaleDateString('it-IT', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  }
+
+  function agentStatus(agent) {
+    const lastRun = agent.last_run;
+    if (!agent.enabled) return 'paused';
+    if (lastRun && lastRun.status === 'error') return 'error';
+    if (agent.crons && agent.crons.some(c => c.status === 'active')) return 'active';
+    if (agent.heartbeat && agent.heartbeat.status === 'active') return 'active';
+    return 'idle';
+  }
+
+  function badgeHtml(status) {
+    const map = {
+      active: ['badge-active', 'Attivo'],
+      running: ['badge-running', 'In esecuzione'],
+      error: ['badge-error', 'Errore'],
+      paused: ['badge-paused', 'In pausa'],
+      idle: ['badge-idle', 'Inattivo'],
+    };
+    const [cls, label] = map[status] || ['badge-idle', status];
+    return `<span class="badge ${cls}">${label}</span>`;
+  }
+
+  function showToast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast show ${type}`;
+    setTimeout(() => el.className = 'toast', 2500);
+  }
+
+  // ── Render ──
+  function renderAgents(data) {
+    agents = data;
+    const container = document.getElementById('agentsContainer');
+    const count = document.getElementById('agentCount');
+
+    if (!data.length) {
+      count.textContent = 'Nessun agente';
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🐄</div>
+          <div class="empty-title">Nessun agente configurato</div>
+          <div class="empty-text">Crea il tuo primo agente per iniziare.</div>
+          <a href="/wizard.html" class="btn btn-primary">+ Crea agente</a>
+        </div>`;
+      return;
+    }
+
+    count.textContent = `${data.length} agent${data.length === 1 ? 'e' : 'i'}`;
+
+    container.innerHTML = `<div class="agents-grid">${data.map(renderCard).join('')}</div>`;
+  }
+
+  function renderCard(agent) {
+    const status = agentStatus(agent);
+    const lastRun = agent.last_run;
+
+    // Crons
+    let cronsHtml = '';
+    if (agent.crons && agent.crons.length) {
+      const items = agent.crons.map(c => `
+        <div class="cron-item">
+          <span class="cron-id">${c.cron_id || c.id || 'cron'}</span>
+          <span class="cron-meta">
+            prossimo: ${fmtNext(c.next_run)}
+            &nbsp;·&nbsp;
+            ultimo: ${timeAgo(c.last_run)}
+          </span>
+        </div>`).join('');
+      cronsHtml = `
+        <div class="card-section">
+          <div class="section-label">⏰ Cron</div>
+          ${items}
+        </div>`;
+    }
+
+    // Heartbeat
+    let hbHtml = '';
+    if (agent.heartbeat && agent.heartbeat.interval > 0) {
+      const hb = agent.heartbeat;
+      const isActive = hb.status === 'active';
+      hbHtml = `
+        <div class="card-section">
+          <div class="section-label">💓 Heartbeat</div>
+          <div class="hb-row">
+            <div class="hb-dot ${isActive ? 'active' : ''}"></div>
+            <span>ogni ${Math.floor(hb.interval/60)} min</span>
+            <span style="color:var(--color-text-muted)">·</span>
+            <span>ultimo: ${timeAgo(hb.last_tick)}</span>
+          </div>
+        </div>`;
+    }
+
+    // Skills
+    let skillsHtml = '';
+    if (agent.skills && agent.skills.length) {
+      const badges = agent.skills.map(s => `<span class="badge-skill">${s}</span>`).join('');
+      skillsHtml = `<div class="skills-row">${badges}</div>`;
+    }
+
+    const isPaused = status === 'paused';
+
+    return `
+      <div class="agent-card status-${status}" data-name="${agent.name}">
+        <div class="card-header">
+          <div class="card-name">${agent.name}</div>
+          ${badgeHtml(status)}
+        </div>
+        ${cronsHtml}
+        ${hbHtml}
+        ${skillsHtml}
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="runAgent('${agent.name}')">▶ Run</button>
+          ${isPaused
+            ? `<button class="btn btn-ghost" onclick="resumeAgent('${agent.name}')">▷ Riprendi</button>`
+            : `<button class="btn btn-ghost" onclick="pauseAgent('${agent.name}')">⏸ Pausa</button>`}
+          <button class="btn btn-ghost" onclick="openChat('${agent.name}')">💬 Chat</button>
+          <div class="spacer"></div>
+          <a href="/agent.html?name=${agent.name}" class="btn btn-ghost">→ Dettaglio</a>
+        </div>
+      </div>`;
+  }
+
+  // ── API calls ──
+  async function fetchAgents() {
+    try {
+      const res = await fetch('/api/agents');
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      renderAgents(data);
+    } catch (e) {
+      console.error('Errore fetch agenti:', e);
+    }
+  }
+
+  async function fetchHealth() {
+    try {
+      const res = await fetch('/health');
+      const data = await res.json();
+      const dot = document.getElementById('daemonDot');
+      const label = document.getElementById('daemonLabel');
+      dot.className = 'daemon-dot online';
+      label.textContent = data.emergency_stop ? 'Emergency Stop' : 'Online';
+      if (data.emergency_stop) dot.className = 'daemon-dot offline';
+    } catch {
+      document.getElementById('daemonDot').className = 'daemon-dot offline';
+      document.getElementById('daemonLabel').textContent = 'Offline';
+    }
+  }
+
+  async function runAgent(name) {
+    try {
+      const res = await fetch(`/api/agents/${name}/run`, { method: 'POST' });
+      const data = await res.json();
+      showToast(res.ok ? `${name} avviato` : data.message, res.ok ? 'success' : 'error');
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  async function pauseAgent(name) {
+    try {
+      await fetch(`/api/agents/${name}/pause`, { method: 'POST' });
+      showToast(`${name} in pausa`);
+      fetchAgents();
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  async function resumeAgent(name) {
+    try {
+      await fetch(`/api/agents/${name}/resume`, { method: 'POST' });
+      showToast(`${name} ripreso`, 'success');
+      fetchAgents();
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  // ── Stop All ──
+  function openStopAll() { document.getElementById('stopAllOverlay').classList.add('open'); }
+  function closeStopAll(e) {
+    if (!e || e.target === document.getElementById('stopAllOverlay'))
+      document.getElementById('stopAllOverlay').classList.remove('open');
+  }
+  async function confirmStopAll() {
+    try {
+      await fetch('/api/stop-all', { method: 'POST' });
+      closeStopAll();
+      showToast('Emergency Stop attivato', 'error');
+      fetchHealth(); fetchAgents();
+    } catch { showToast('Errore di rete', 'error'); }
+  }
+
+  // ── Chat ──
+  async function openChat(name) {
+    chatAgent = name;
+    document.getElementById('chatAgentName').textContent = name;
+    document.getElementById('chatMessages').innerHTML = '';
+    document.getElementById('chatInput').value = '';
+    document.getElementById('chatPanel').classList.add('open');
+    document.getElementById('chatInput').focus();
+    lastPollTimestamp = null;
+    // Carica storico chat dai log
+    try {
+      const r = await fetch(`/api/agents/${name}/logs?limit=50`);
+      if (r.ok) {
+        const data = await r.json();
+        const entries = Array.isArray(data) ? data : (data.logs || []);
+        const chatLogs = entries
+          .filter(l => l.trigger === 'chat' && l.status === 'success' && l.output)
+          .reverse();
+        chatLogs.forEach(l => {
+          const ts = timeAgo(l.timestamp);
+          if (l.prompt) appendMsg('user', l.prompt, ts);
+          appendMsg('agent', l.output, ts);
+        });
+      }
+    } catch(e) {}
+  }
+
+  function closeChat() {
+    document.getElementById('chatPanel').classList.remove('open');
+    if (chatPolling) { clearInterval(chatPolling); chatPolling = null; }
+    chatAgent = null;
+  }
+
+  function chatKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  }
+
+  function appendMsg(role, text, ts) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `chat-msg ${role}`;
+    div.innerHTML = `
+      <div class="chat-bubble">${escHtml(text)}</div>
+      <div class="chat-meta">${ts || ''}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text || !chatAgent) return;
+    input.value = '';
+
+    const now = new Date().toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+    appendMsg('user', text, now);
+
+    // Aggiungi loading bubble
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'chat-msg agent';
+    loadingDiv.innerHTML = `<div class="chat-bubble loading-bubble"><div class="spinner" style="width:16px;height:16px;margin:0"></div> Elaborazione...</div>`;
+    document.getElementById('chatMessages').appendChild(loadingDiv);
+    document.getElementById('chatMessages').scrollTop = 99999;
+
+    // Memorizza timestamp prima dell'invio
+    const sentAt = new Date().toISOString();
+
+    try {
+      const res = await fetch(`/api/agents/${chatAgent}/run`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({prompt: text}),
+      });
+      if (!res.ok) {
+        loadingDiv.remove();
+        appendMsg('agent', 'Errore: ' + (await res.json()).message, now);
+        return;
+      }
+    } catch {
+      loadingDiv.remove();
+      appendMsg('agent', 'Errore di rete', now);
+      return;
+    }
+
+    // Polling risposta
+    let attempts = 0;
+    const maxAttempts = 60; // max 2 min
+    const poll = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        clearInterval(poll);
+        loadingDiv.remove();
+        appendMsg('agent', 'Timeout: nessuna risposta dopo 2 minuti.', '');
+        return;
+      }
+      try {
+        const r = await fetch(`/api/agents/${chatAgent}/logs?limit=5`);
+        const logs = await r.json();
+        // Cerca log con trigger "chat" più recente del momento di invio
+        const found = logs.find(l =>
+          l.trigger === 'chat' &&
+          new Date(l.timestamp) >= new Date(sentAt) &&
+          (l.status === 'success' || l.status === 'error')
+        );
+        if (found) {
+          clearInterval(poll);
+          loadingDiv.remove();
+          const replyTs = new Date(found.timestamp).toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+          const reply = found.output || (found.status === 'error' ? `Errore: ${found.error}` : '(nessun output)');
+          appendMsg('agent', reply, replyTs);
+        }
+      } catch { /* ignora errori polling */ }
+    }, 2000);
+  }
+
+  // ── Init ──
+  fetchAgents();
+  fetchHealth();
+  setInterval(fetchAgents, 5000);
+  setInterval(fetchHealth, 10000);
+</script>
+</body>
+</html>

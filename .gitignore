@@ -1,0 +1,26 @@
+# Secrets
+.env
+
+# Memoria agenti (dati personali/sensibili)
+agents/*/memory/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Packaging
+*.egg-info/
+dist/
+build/
+
+# Logs agenti
+agents/*/logs/
+
+# Output runtime agenti
+agents/*/output.txt
+
+# File di emergenza (non versionare lo stato di blocco)
+EMERGENCY_STOP
