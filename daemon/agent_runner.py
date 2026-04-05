@@ -120,6 +120,11 @@ def run_agent(
         logger.error("Cartella agente non trovata: %s", agent_dir)
         return {"status": "error", "error": f"Agent dir not found: {agent_dir}"}
 
+    emergency_stop = ROOT_DIR / "EMERGENCY_STOP"
+    if emergency_stop.exists():
+        logger.warning("[%s] EMERGENCY_STOP attivo — esecuzione bloccata", agent_name)
+        return {"status": "blocked", "error": "EMERGENCY_STOP attivo. Rimuovi il file per riabilitare."}
+
     cron_config = cron_config or {}
     allowed_tools = _resolve_allowed_tools(cron_config)
 
@@ -198,7 +203,17 @@ def run_agent(
             return result
 
         # Parsing output JSON di Claude Code
-        output_text, session_id = _parse_claude_output(proc.stdout, agent_name)
+        output_text, session_id, parsed_ok = _parse_claude_output(proc.stdout, agent_name)
+
+        # Retry CLI se output malformato e stdout era non vuoto
+        if not parsed_ok and proc.stdout.strip():
+            logger.warning("[%s] Output malformato, retry CLI...", agent_name)
+            try:
+                proc = _run_cmd(cmd)
+                output_text, session_id, parsed_ok = _parse_claude_output(proc.stdout, agent_name)
+            except Exception as retry_err:
+                logger.warning("[%s] Retry fallito: %s", agent_name, retry_err)
+
         result["status"] = "success"
         result["output"] = output_text
         if session_id:
@@ -234,13 +249,14 @@ def run_agent(
     return result
 
 
-def _parse_claude_output(raw_stdout: str, agent_name: str) -> tuple[str | None, str | None]:
+def _parse_claude_output(raw_stdout: str, agent_name: str) -> tuple[str | None, str | None, bool]:
     """
     Parsa l'output JSON di Claude Code (--output-format json).
-    Ritorna (testo_risposta, session_id). Entrambi possono essere None.
+    Ritorna (testo_risposta, session_id, parsed_ok).
+    parsed_ok=False indica che l'output non era JSON valido (fallback a testo grezzo).
     """
     if not raw_stdout.strip():
-        return None, None
+        return None, None, False
 
     # Claude Code con --output-format json emette una lista di messaggi
     # L'ultimo con role="assistant" contiene la risposta finale.
@@ -266,17 +282,17 @@ def _parse_claude_output(raw_stdout: str, agent_name: str) -> tuple[str | None, 
                             )
                         else:
                             text = str(content)
-                return text, session_id
+                return text, session_id, True
             elif isinstance(data, dict):
                 session_id = data.get("session_id")
                 if data.get("type") == "result":
                     subtype = data.get("subtype", "")
                     if subtype not in ("success",):
                         logger.warning("[%s] Claude Code terminato con subtype=%s", agent_name, subtype)
-                        return None, session_id
+                        return None, session_id, True
                     result_text = data.get("result")
-                    return (str(result_text) if result_text else None), session_id
-                return data.get("result") or data.get("content") or None, session_id
+                    return (str(result_text) if result_text else None), session_id, True
+                return data.get("result") or data.get("content") or None, session_id, True
         except json.JSONDecodeError:
             if attempt == 0:
                 for line in reversed(raw_stdout.strip().splitlines()):
@@ -288,9 +304,9 @@ def _parse_claude_output(raw_stdout: str, agent_name: str) -> tuple[str | None, 
                         continue
             else:
                 logger.warning("[%s] Output Claude Code non parsabile — restituisco testo grezzo", agent_name)
-                return raw_stdout[:2000], None
+                return raw_stdout[:2000], None, False
 
-    return raw_stdout[:2000], None
+    return raw_stdout[:2000], None, False
 
 
 def _notify_telegram(agent_name: str, message: str, cron_config: dict) -> None:

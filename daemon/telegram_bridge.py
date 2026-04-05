@@ -40,6 +40,7 @@ class TelegramBridge:
         self._allowed_chat_ids = self._load_allowed_chats()
         self._app = None
         self._thread: threading.Thread | None = None
+        self._stop_event = threading.Event()
         self._scheduler = None   # iniettato da main.py dopo l'avvio
         self._heartbeat = None   # iniettato da main.py dopo l'avvio
 
@@ -62,6 +63,7 @@ class TelegramBridge:
         logger.info("Telegram Bridge avviato (polling).")
 
     def stop(self):
+        self._stop_event.set()
         if self._app:
             try:
                 self._app.stop()
@@ -86,10 +88,13 @@ class TelegramBridge:
             import telegram
             async def _send():
                 bot = telegram.Bot(token=self._token)
-                await bot.send_message(
-                    chat_id=target,
-                    text=text[:4096],
-                    parse_mode="Markdown",
+                await asyncio.wait_for(
+                    bot.send_message(
+                        chat_id=target,
+                        text=text[:4096],
+                        parse_mode="Markdown",
+                    ),
+                    timeout=10.0,
                 )
             asyncio.run(_send())
             return True
@@ -102,26 +107,37 @@ class TelegramBridge:
     # ------------------------------------------------------------------
 
     def _run_polling(self):
-        try:
-            from telegram.ext import Application, CommandHandler, MessageHandler, filters
+        import time as _time
+        from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
-            app = Application.builder().token(self._token).build()
-            self._app = app
+        backoff = 5
+        while not self._stop_event.is_set():
+            try:
+                app = Application.builder().token(self._token).build()
+                self._app = app
 
-            for cmd_name in ["start", "status", "agents", "run", "stop",
-                             "pause", "resume", "logs", "schedule",
-                             "heartbeat", "skills"]:
-                method = getattr(self, f"_cmd_{cmd_name}", None)
-                if method:
-                    app.add_handler(CommandHandler(cmd_name, method))
+                for cmd_name in ["start", "status", "agents", "run", "stop",
+                                 "pause", "resume", "logs", "schedule",
+                                 "heartbeat", "skills"]:
+                    method = getattr(self, f"_cmd_{cmd_name}", None)
+                    if method:
+                        app.add_handler(CommandHandler(cmd_name, method))
 
-            # Messaggi liberi → inoltrati all'agente
-            app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message))
+                app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message))
 
-            logger.info("Bot Telegram in ascolto...")
-            app.run_polling(drop_pending_updates=True)
-        except Exception as e:
-            logger.exception("Errore fatale Telegram polling: %s", e)
+                logger.info("Bot Telegram in ascolto...")
+                app.run_polling(drop_pending_updates=True)
+
+                if self._stop_event.is_set():
+                    break
+                logger.warning("Telegram polling terminato inaspettatamente, riconnessione in %ds", backoff)
+            except Exception as e:
+                if self._stop_event.is_set():
+                    break
+                logger.warning("Telegram disconnesso (%s), riconnessione in %ds", e, backoff)
+
+            self._stop_event.wait(backoff)
+            backoff = min(backoff * 2, 60)
 
     def _is_allowed(self, chat_id: str) -> bool:
         if not self._allowed_chat_ids:

@@ -135,11 +135,16 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
         claude_ok = shutil.which("claude") is not None
         tg_connected = telegram is not None and bool(os.environ.get("TELEGRAM_BOT_TOKEN"))
         agents = [d.name for d in AGENTS_DIR.iterdir() if d.is_dir()] if AGENTS_DIR.exists() else []
+        sched_backend = getattr(scheduler, "scheduler", None)
+        scheduler_running = bool(scheduler and sched_backend and getattr(sched_backend, "running", False))
+        heartbeat_running = bool(heartbeat_mgr and getattr(heartbeat_mgr, "_running", False))
         return _ok({
             "status": "ok",
             "uptime_seconds": round(time.monotonic() - _start_time),
             "claude_available": claude_ok,
             "telegram_connected": tg_connected,
+            "scheduler_running": scheduler_running,
+            "heartbeat_running": heartbeat_running,
             "agents_count": len(agents),
             "emergency_stop": EMERGENCY_STOP_FILE.exists(),
         })
@@ -450,6 +455,11 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
     # ------------------------------------------------------------------
     # Stop All
     # ------------------------------------------------------------------
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        logger.exception("Unhandled API exception")
+        return jsonify({"error": True, "message": "Internal server error", "code": 500}), 500
 
     @app.route("/api/stop-all", methods=["POST"])
     def stop_all():
