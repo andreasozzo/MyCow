@@ -1,6 +1,6 @@
 name: test-agent
 enabled: true
-heartbeat: 1800
+heartbeat: 7200
 heartbeat_model: claude-haiku-4-5-20251001
 telegram_chat_id: ""
 
