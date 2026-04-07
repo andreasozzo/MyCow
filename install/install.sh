@@ -186,7 +186,9 @@ step "Creazione comando 'mycow'"
 WRAPPER="$INSTALL_DIR/mycow"
 cat > "$WRAPPER" <<'WRAPPER_EOF'
 #!/usr/bin/env bash
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Risolve il symlink per trovare la directory reale di MyCow
+SELF="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 source "$SCRIPT_DIR/venv/bin/activate"
 python "$SCRIPT_DIR/daemon/main.py" "$@"
 WRAPPER_EOF
