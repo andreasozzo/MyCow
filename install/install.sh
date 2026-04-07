@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# MyCow Installer per Mac/Linux
-# Uso: curl -fsSL https://mycow.dev/install.sh | bash
+# MyCow Installer for Mac/Linux
+# Usage: curl -fsSL https://mycow.dev/install.sh | bash
 
 set -euo pipefail
 
@@ -14,9 +14,9 @@ MIN_PYTHON_MINOR=11  # 3.11+
 step()  { echo ""; echo ">> $1"; }
 ok()    { echo "   OK  $1"; }
 warn()  { echo "   !   $1"; }
-fail()  { echo ""; echo "[ERRORE] $1" >&2; exit 1; }
+fail()  { echo ""; echo "[ERROR] $1" >&2; exit 1; }
 
-# Colori (solo se terminale interattivo)
+# Colors (only in interactive terminal)
 if [ -t 1 ]; then
     step()  { echo ""; echo -e "\033[36m>> $1\033[0m"; }
     ok()    { echo -e "   \033[32mOK\033[0m  $1"; }
@@ -24,9 +24,9 @@ if [ -t 1 ]; then
     fail()  { echo -e "\n\033[31m[ERRORE] $1\033[0m" >&2; exit 1; }
 fi
 
-# --- 1. Verifica Python -------------------------------------------------
+# --- 1. Check Python -------------------------------------------------
 
-step "Verifica Python 3.11+"
+step "Check Python 3.11+"
 
 PYTHON_CMD=""
 for cmd in python3 python; do
@@ -36,49 +36,49 @@ for cmd in python3 python; do
         minor=$(echo "$ver" | cut -d. -f2)
         if [ "$major" -ge 3 ] && [ "$minor" -ge $MIN_PYTHON_MINOR ]; then
             PYTHON_CMD="$cmd"
-            ok "Trovato: $cmd $ver"
+            ok "Found: $cmd $ver"
             break
         fi
     fi
 done
 
-[ -z "$PYTHON_CMD" ] && fail "Python 3.11+ non trovato. Scarica da https://python.org/downloads/"
+[ -z "$PYTHON_CMD" ] && fail "Python 3.11+ not found. Download from https://python.org/downloads/"
 
-# --- 2. Verifica Claude Code CLI ----------------------------------------
+# --- 2. Check Claude Code CLI ----------------------------------------
 
-step "Verifica Claude Code CLI"
+step "Check Claude Code CLI"
 
 if command -v claude &>/dev/null; then
-    ok "Trovato: $(claude --version 2>&1 | head -1)"
+    ok "Found: $(claude --version 2>&1 | head -1)"
 else
-    warn "Claude Code CLI non trovato nel PATH."
-    warn "Installa con: npm install -g @anthropic-ai/claude-code"
-    warn "MyCow verra' installato ma non funzionera' senza Claude Code."
+    warn "Claude Code CLI not found in PATH."
+    warn "Install with: npm install -g @anthropic-ai/claude-code"
+    warn "MyCow will be installed but won't work without Claude Code."
 fi
 
 # --- 3. Download MyCow --------------------------------------------------
 
 step "Download MyCow"
 
-# Verifica che unzip sia disponibile
+# Check that unzip is available
 if ! command -v unzip &>/dev/null; then
-    warn "unzip non trovato. Installo..."
+    warn "unzip not found. Installing..."
     if command -v apt-get &>/dev/null; then
-        sudo apt-get install -y unzip --quiet || fail "Impossibile installare unzip."
+        sudo apt-get install -y unzip --quiet || fail "Failed to install unzip."
     elif command -v brew &>/dev/null; then
-        brew install unzip --quiet || fail "Impossibile installare unzip."
+        brew install unzip --quiet || fail "Failed to install unzip."
     else
-        fail "unzip non trovato. Installalo con il package manager della tua distro."
+        fail "unzip not found. Install it with your distro's package manager."
     fi
 fi
 
 if [ -d "$INSTALL_DIR" ]; then
-    # Se la cartella esiste ma manca requirements.txt, e' un'installazione rotta
+    # If folder exists but requirements.txt is missing, it's a broken install
     if [ ! -f "$INSTALL_DIR/requirements.txt" ]; then
-        warn "Installazione corrotta trovata. Rimuovo e riscarico..."
+        warn "Broken install found. Removing and re-downloading..."
         rm -rf "$INSTALL_DIR"
     else
-        warn "Cartella $INSTALL_DIR gia' esistente. Aggiorno solo le dipendenze."
+        warn "Folder $INSTALL_DIR already exists. Updating dependencies only."
     fi
 fi
 
@@ -86,65 +86,65 @@ if [ ! -d "$INSTALL_DIR" ]; then
     TMP_ZIP=$(mktemp /tmp/mycow_XXXXXX.zip)
     TMP_EXTRACT=$(mktemp -d /tmp/mycow_extract_XXXXXX)
 
-    echo "   Scarico da $MYCOW_REPO_URL ..."
+    echo "   Downloading from $MYCOW_REPO_URL ..."
     if command -v curl &>/dev/null; then
         curl -fsSL "$MYCOW_REPO_URL" -o "$TMP_ZIP"
     elif command -v wget &>/dev/null; then
         wget -q "$MYCOW_REPO_URL" -O "$TMP_ZIP"
     else
-        fail "curl o wget necessari per il download."
+        fail "curl or wget required for download."
     fi
 
     unzip -q "$TMP_ZIP" -d "$TMP_EXTRACT"
 
-    # La zip di GitHub estrae in una sottocartella (es. MyCow-master)
+    # GitHub zip extracts into a subfolder (e.g. MyCow-master)
     INNER_DIR=$(find "$TMP_EXTRACT" -maxdepth 1 -mindepth 1 -type d | head -1)
     mv "$INNER_DIR" "$INSTALL_DIR"
 
     rm -f "$TMP_ZIP"
     rm -rf "$TMP_EXTRACT"
-    ok "Estratto in $INSTALL_DIR"
+    ok "Extracted to $INSTALL_DIR"
 fi
 
-# --- 4. Crea venv -------------------------------------------------------
+# --- 4. Create venv -------------------------------------------------------
 
-step "Creazione ambiente virtuale Python"
+step "Creating Python virtual environment"
 
 if [ -d "$VENV_DIR" ] && [ ! -f "$VENV_DIR/bin/pip" ]; then
-    warn "Venv corrotto trovato. Rimuovo e ricreo..."
+    warn "Broken venv found. Removing and recreating..."
     rm -rf "$VENV_DIR"
 fi
 
 if [ ! -d "$VENV_DIR" ]; then
-    # Controlla PRIMA se il modulo venv e' disponibile (Debian/Ubuntu non lo include di default)
+    # Check FIRST if venv module is available (Debian/Ubuntu doesn't include it by default)
     if ! "$PYTHON_CMD" -c "import ensurepip" 2>/dev/null; then
         PYTHON_VER=$("$PYTHON_CMD" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
-        warn "Modulo venv non disponibile. Installo python${PYTHON_VER}-venv (richiede password sudo)..."
+        warn "venv module not available. Installing python${PYTHON_VER}-venv (requires sudo password)..."
         if command -v apt-get &>/dev/null; then
             sudo apt-get install -y "python${PYTHON_VER}-venv" --quiet \
-                || fail "Impossibile installare python${PYTHON_VER}-venv. Esegui: sudo apt install python${PYTHON_VER}-venv"
+                || fail "Failed to install python${PYTHON_VER}-venv. Run: sudo apt install python${PYTHON_VER}-venv"
         else
-            fail "Installa python3-venv per la tua distro e riprova."
+            fail "Install python3-venv for your distro and try again."
         fi
     fi
-    "$PYTHON_CMD" -m venv "$VENV_DIR" || fail "Creazione venv fallita."
-    ok "Venv creato in $VENV_DIR"
+    "$PYTHON_CMD" -m venv "$VENV_DIR" || fail "venv creation failed."
+    ok "venv created in $VENV_DIR"
 else
-    ok "Venv gia' esistente"
+    ok "venv already exists"
 fi
 
-# --- 5. Installa dipendenze ---------------------------------------------
+# --- 5. Install dependencies ---------------------------------------------
 
-step "Installazione dipendenze Python"
+step "Installing Python dependencies"
 
-[ ! -f "$INSTALL_DIR/requirements.txt" ] && fail "requirements.txt non trovato. Installazione corrotta — rimuovi $INSTALL_DIR e riprova."
+[ ! -f "$INSTALL_DIR/requirements.txt" ] && fail "requirements.txt not found. Broken install — remove $INSTALL_DIR and try again."
 "$VENV_DIR/bin/pip" install --upgrade pip --quiet
 "$VENV_DIR/bin/pip" install -r "$INSTALL_DIR/requirements.txt" --quiet
-ok "Dipendenze installate"
+ok "Dependencies installed"
 
-# --- 6. Configura .env --------------------------------------------------
+# --- 6. Configure .env --------------------------------------------------
 
-step "Configurazione .env"
+step "Configuring .env"
 
 ENV_FILE="$INSTALL_DIR/.env"
 ENV_EXAMPLE="$INSTALL_DIR/.env.example"
@@ -152,7 +152,7 @@ ENV_EXAMPLE="$INSTALL_DIR/.env.example"
 if [ ! -f "$ENV_FILE" ]; then
     if [ -f "$ENV_EXAMPLE" ]; then
         cp "$ENV_EXAMPLE" "$ENV_FILE"
-        ok ".env creato da .env.example"
+        ok ".env created from .env.example"
     else
         cat > "$ENV_FILE" <<'EOF'
 TELEGRAM_BOT_TOKEN=
@@ -161,81 +161,81 @@ BRAVE_API_KEY=
 MYCOW_PORT=3333
 MYCOW_LOG_LEVEL=INFO
 EOF
-        ok ".env creato con valori di default"
+        ok ".env created with default values"
     fi
 else
-    ok ".env gia' esistente (non sovrascritto)"
+    ok ".env already exists (not overwritten)"
 fi
 
-# --- 7. Rimuovi skill dev -----------------------------------------------
+# --- 7. Remove dev skills -----------------------------------------------
 
-step "Rimozione skill di sviluppo interno"
+step "Removing internal development skills"
 
 for skill in ux-premium security-first; do
     skill_path="$INSTALL_DIR/skills/global/$skill"
     if [ -d "$skill_path" ]; then
         rm -rf "$skill_path"
-        ok "Rimossa: $skill"
+        ok "Removed: $skill"
     fi
 done
 
-# --- 8. Crea script wrapper 'mycow' ------------------------------------
+# --- 8. Create 'mycow' wrapper script ------------------------------------
 
-step "Creazione comando 'mycow'"
+step "Creating 'mycow' command"
 
 WRAPPER="$INSTALL_DIR/mycow"
 cat > "$WRAPPER" <<'WRAPPER_EOF'
 #!/usr/bin/env bash
-# Risolve il symlink per trovare la directory reale di MyCow
+# Resolve symlink to find MyCow's actual directory
 SELF="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "$SELF")" && pwd)"
 source "$SCRIPT_DIR/venv/bin/activate"
 python "$SCRIPT_DIR/daemon/main.py" "$@"
 WRAPPER_EOF
 chmod +x "$WRAPPER"
-ok "Creato: $WRAPPER"
+ok "Created: $WRAPPER"
 
-# --- 9. Registra nel PATH -----------------------------------------------
+# --- 9. Register in PATH -----------------------------------------------
 
-step "Registrazione nel PATH"
+step "Registering in PATH"
 
 LINKED=false
 
-# Prova symlink in /usr/local/bin (richiede permessi)
+# Try symlink in /usr/local/bin (requires permissions)
 if [ -w "/usr/local/bin" ] || sudo -n true 2>/dev/null; then
-    # Rimuovi eventuale versione precedente (file o symlink vecchio)
+    # Remove any previous version (file or old symlink)
     sudo rm -f /usr/local/bin/mycow 2>/dev/null
     if sudo ln -sf "$WRAPPER" /usr/local/bin/mycow 2>/dev/null; then
-        ok "Symlink creato: /usr/local/bin/mycow"
+        ok "Symlink created: /usr/local/bin/mycow"
         LINKED=true
     fi
 fi
 
 if [ "$LINKED" = false ]; then
-    # Fallback: aggiunge al PATH in .bashrc e .zshrc
+    # Fallback: add to PATH in .bashrc and .zshrc
     EXPORT_LINE="export PATH=\"$INSTALL_DIR:\$PATH\""
     for rc_file in "$HOME/.bashrc" "$HOME/.zshrc"; do
         if [ -f "$rc_file" ] && ! grep -qF "$INSTALL_DIR" "$rc_file"; then
             echo "" >> "$rc_file"
             echo "# MyCow" >> "$rc_file"
             echo "$EXPORT_LINE" >> "$rc_file"
-            ok "Aggiunto PATH in $rc_file"
+            ok "Added PATH to $rc_file"
         fi
     done
-    warn "Riapri il terminale (o esegui: source ~/.bashrc) per usare 'mycow'"
+    warn "Reopen terminal (or run: source ~/.bashrc) to use 'mycow'"
 fi
 
 # --- Fine ---------------------------------------------------------------
 
 echo ""
 echo "=========================================="
-echo "  MyCow installato con successo!"
+echo "  MyCow installed successfully!"
 echo "=========================================="
 echo ""
-echo "  Avvia il daemon:    mycow start"
-echo "  Ferma il daemon:    mycow stop"
-echo "  Stato:              mycow status"
+echo "  Start daemon:       mycow start"
+echo "  Stop daemon:        mycow stop"
+echo "  Status:             mycow status"
 echo ""
-echo "  Configura i tuoi secrets in: $ENV_FILE"
-echo "  Oppure aprendo la Web UI:    http://127.0.0.1:3333 → Settings"
+echo "  Configure your secrets in: $ENV_FILE"
+echo "  Or open Web UI:             http://127.0.0.1:3333 → Settings"
 echo ""

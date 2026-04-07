@@ -1,35 +1,35 @@
-# Licenza Commerciale MyCow
+# MyCow Commercial License
 
-MyCow è distribuito sotto **Business Source License 1.1**.
-
----
-
-## Cosa è uso commerciale
-
-Richiede licenza commerciale qualsiasi utilizzo che includa:
-
-- Offrire MyCow come servizio hosted (SaaS) a pagamento o gratuito con scopo commerciale
-- Integrare MyCow in un prodotto commerciale
-- Usare MyCow come infrastruttura di un'azienda o attività generatrice di ricavi
-- Redistribuire MyCow come parte di un prodotto commerciale
-
-## Cosa NON richiede licenza commerciale
-
-- Uso personale e progetti personali
-- Ricerca e uso accademico
-- Progetti open source non commerciali
-- Uso interno senza scopo di lucro
+MyCow is distributed under the **Business Source License 1.1**.
 
 ---
 
-## Come richiedere la licenza commerciale
+## What constitutes commercial use
 
-Contatta il maintainer con le informazioni sul tuo caso d'uso.
+A commercial license is required for any use that includes:
 
-Le licenze commerciali sono disponibili per singoli sviluppatori, team e aziende.
+- Offering MyCow as a hosted service (SaaS) — paid or free with commercial intent
+- Integrating MyCow into a commercial product
+- Using MyCow as infrastructure for a company or revenue-generating activity
+- Redistributing MyCow as part of a commercial product
+
+## What does NOT require a commercial license
+
+- Personal use and personal projects
+- Research and academic use
+- Non-commercial open source projects
+- Internal use without profit motive
+
+---
+
+## How to request a commercial license
+
+Contact the maintainer with information about your use case.
+
+Commercial licenses are available for individual developers, teams, and companies.
 
 ---
 
 ## Change Date
 
-Quattro anni dalla prima release pubblica di MyCow, la licenza cambierà automaticamente in **MIT**, rendendo MyCow completamente open source.
+Four years from the first public release of MyCow, the license will automatically change to **MIT**, making MyCow fully open source.

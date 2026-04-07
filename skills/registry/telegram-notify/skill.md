@@ -1,42 +1,42 @@
 # Skill: Telegram Notify
 
-Usa questa skill per inviare messaggi Telegram tramite il bridge MyCow.
+Use this skill to send Telegram messages via the MyCow bridge.
 
-## Come usarla
+## How to use it
 
-Il bridge Telegram di MyCow è già attivo quando il daemon gira. Per inviare un messaggio dall'interno di un agente, scrivi in output il testo del messaggio — il trigger "cron" e "heartbeat" inviano automaticamente l'output su Telegram se `telegram_without_approval: true` nel cron.yaml.
+The MyCow Telegram bridge is already active when the daemon is running. To send a message from inside an agent, write the message text as output — the "cron" and "heartbeat" triggers automatically send the output to Telegram if `telegram_without_approval: true` is set in cron.yaml.
 
-## Formattazione messaggi
+## Message formatting
 
-Telegram supporta Markdown subset:
+Telegram supports a Markdown subset:
 ```
-*testo in grassetto*
-_testo in corsivo_
-`codice inline`
-[testo link](https://url)
-```
-
-## Struttura messaggio consigliata
-
-```
-*[NomeAgente] Titolo breve*
-
-- Punto 1
-- Punto 2
-- Punto 3
-
-Fonte: [link](https://url)
+*bold text*
+_italic text_
+`inline code`
+[link text](https://url)
 ```
 
-## Limiti
+## Recommended message structure
 
-- Massimo 4096 caratteri per messaggio
-- Non usare HTML — usa Markdown
-- Per liste lunghe, suddividi in più messaggi
-- Non inviare messaggi se non hai informazioni nuove da comunicare
+```
+*[AgentName] Short title*
 
-## Quando NON inviare
+- Point 1
+- Point 2
+- Point 3
 
-- Se il heartbeat non ha trovato nulla di rilevante → non inviare
-- Se il task ha fallito con errore tecnico → il daemon notifica automaticamente
-- Non inviare messaggi di "nessuna novità" — solo informazioni utili
+Source: [link](https://url)
+```
+
+## Limits
+
+- Maximum 4096 characters per message
+- Do not use HTML — use Markdown
+- For long lists, split into multiple messages
+- Do not send messages if you have no new information to share
+
+## When NOT to send
+
+- If the heartbeat found nothing relevant → do not send
+- If the task failed with a technical error → the daemon notifies automatically
+- Do not send "no news" messages — only useful information

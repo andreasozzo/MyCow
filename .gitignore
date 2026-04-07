@@ -24,3 +24,6 @@ agents/*/output.txt
 
 # File di emergenza (non versionare lo stato di blocco)
 EMERGENCY_STOP
+
+# Piani di sviluppo (locali, non versionati)
+.plans/

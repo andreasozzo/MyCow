@@ -4,11 +4,11 @@
 
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
 
-Claude Code è reattivo — aspetta che tu gli parli. MyCow aggiunge il layer proattivo: agenti autonomi che lavorano mentre non stai guardando, ti contattano su Telegram, ed eseguono task pianificati via cron.
+Claude Code is reactive — it waits for you to talk to it. MyCow adds the proactive layer: autonomous agents that work while you're not watching, contact you on Telegram, and execute planned tasks via cron.
 
 ---
 
-## Quick start (5 minuti)
+## Quick start (5 minutes)
 
 **Windows:**
 ```powershell
@@ -20,51 +20,51 @@ irm https://raw.githubusercontent.com/andreasozzo/mycow/master/install/install.p
 curl -fsSL https://raw.githubusercontent.com/andreasozzo/mycow/master/install/install.sh | bash
 ```
 
-Poi:
+Then:
 ```bash
 cd ~/MyCow
-# Apri .env e aggiungi TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID
+# Open .env and add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID
 mycow start
-# Apre http://localhost:3333 — crea il tuo primo agente dal wizard
+# Opens http://localhost:3333 — create your first agent from the wizard
 ```
 
 ---
 
-## Prerequisiti
+## Prerequisites
 
 - [Node.js](https://nodejs.org) + [Claude Code CLI](https://github.com/anthropics/claude-code): `npm install -g @anthropic-ai/claude-code`
 - [Python 3.11+](https://python.org)
-- Un bot Telegram (crea con [@BotFather](https://t.me/botfather) in 2 minuti)
+- A Telegram bot (create one with [@BotFather](https://t.me/botfather) in 2 minutes)
 
 ---
 
-## Cosa fa
+## What it does
 
-- **Cron scheduler** — esegue task Claude Code a orari fissi (`0 8 * * *` = ogni mattina alle 8)
-- **Heartbeat** — ogni N minuti l'agente valuta autonomamente se agire (monitoring, alert su eventi)
-- **Telegram bidirezionale** — gli agenti ti contattano proattivamente; tu rispondi e comandi via `/run`, `/stop`, `/logs`
-- **Web UI** — dashboard agenti, log real-time, wizard creazione agente, gestione skill
-- **Skill system** — capacità modulari (ricerca web, git workflow, notifiche) che si abilitano per agente
-- **Kill switch** — `/stop` su Telegram ferma tutto immediatamente
+- **Cron scheduler** — runs Claude Code tasks at fixed times (`0 8 * * *` = every morning at 8)
+- **Heartbeat** — every N minutes the agent autonomously decides whether to act (monitoring, event alerts)
+- **Bidirectional Telegram** — agents contact you proactively; you reply and send commands via `/run`, `/stop`, `/logs`
+- **Web UI** — agent dashboard, real-time logs, agent creation wizard, skill management
+- **Skill system** — modular capabilities (web search, git workflow, notifications) enabled per agent
+- **Kill switch** — `/stop` on Telegram stops everything immediately
 
 ---
 
-## Come funziona
+## How it works
 
-Ogni agente è una cartella autonoma:
+Each agent is a self-contained folder:
 
 ```
 agents/news-monitor/
-├── CLAUDE.md       ← identità e comportamento
-├── cron.yaml       ← schedule, heartbeat, permessi
-└── memory/         ← stato persistente
+├── CLAUDE.md       ← identity and behavior
+├── cron.yaml       ← schedule, heartbeat, permissions
+└── memory/         ← persistent state
 ```
 
-**`cron.yaml` minimo:**
+**Minimal `cron.yaml`:**
 ```yaml
 name: news-monitor
 enabled: true
-heartbeat: 3600          # controlla ogni ora
+heartbeat: 3600          # checks every hour
 permissions:
   internet: true
   telegram_without_approval: true
@@ -73,24 +73,24 @@ crons:
     schedule: "0 8 * * *"
     model: claude-haiku-4-5-20251001
     prompt: >
-      Cerca le 3 news AI più importanti di oggi.
-      Scrivi in output il testo da inviare via Telegram.
+      Find the 3 most important AI news today.
+      Write the text to send via Telegram as output.
 ```
 
 **Cron vs Heartbeat:**
-- **Cron** — esegue *sempre* a orario fisso. Usa per report pianificati.
-- **Heartbeat** — l'agente *decide lui* se agire. Usa per monitoring e alert.
+- **Cron** — *always* runs at the fixed schedule. Use for planned reports.
+- **Heartbeat** — the agent *decides* whether to act. Use for monitoring and alerts.
 
 ---
 
-## Skill disponibili
+## Available skills
 
-| Skill | Descrizione | Env |
+| Skill | Description | Env |
 |-------|-------------|-----|
-| `brave-search` | Ricerca web privata via Brave Search API | `BRAVE_API_KEY` |
-| `web-fetch` | Scarica e legge pagine web | — |
-| `telegram-notify` | Formattazione messaggi Telegram | — |
-| `git-workflow` | Commit semantici, branch, PR | — |
+| `brave-search` | Private web search via Brave Search API | `BRAVE_API_KEY` |
+| `web-fetch` | Download and read web pages | — |
+| `telegram-notify` | Telegram message formatting | — |
+| `git-workflow` | Semantic commits, branches, PRs | — |
 
 ```bash
 mycow skill install brave-search
@@ -99,27 +99,27 @@ mycow skill add brave-search --agent news-monitor
 
 ---
 
-## Sicurezza
+## Security
 
-- Permessi opt-in espliciti per agente (`--allowedTools` senza `--dangerously-skip-permissions`)
-- API solo su `127.0.0.1:3333` — mai esposta in rete
-- Secrets in `.env`, mai nei file dell'agente
-- Kill switch: `/stop` su Telegram → file `EMERGENCY_STOP` blocca tutte le esecuzioni
+- Explicit opt-in permissions per agent (`--allowedTools` without `--dangerously-skip-permissions`)
+- API only on `127.0.0.1:3333` — never exposed to the network
+- Secrets in `.env`, never in agent files
+- Kill switch: `/stop` on Telegram → `EMERGENCY_STOP` file blocks all executions
 
-Vedi [docs/SECURITY.md](docs/SECURITY.md) per il modello completo.
-
----
-
-## Documentazione
-
-- [docs/AGENTS.md](docs/AGENTS.md) — struttura agenti, cron.yaml, CLAUDE.md, esempi
-- [docs/SKILLS.md](docs/SKILLS.md) — skill disponibili, installazione, creazione custom
-- [docs/SECURITY.md](docs/SECURITY.md) — permessi, EMERGENCY_STOP, Tailscale
+See [docs/SECURITY.md](docs/SECURITY.md) for the full security model.
 
 ---
 
-## Licenza
+## Documentation
 
-Business Source License 1.1 — gratuito per uso personale e non commerciale.
-Per uso commerciale: vedi [COMMERCIAL.md](COMMERCIAL.md).
-Diventa MIT 4 anni dalla prima release pubblica.
+- [docs/AGENTS.md](docs/AGENTS.md) — agent structure, cron.yaml, CLAUDE.md, examples
+- [docs/SKILLS.md](docs/SKILLS.md) — available skills, installation, creating custom skills
+- [docs/SECURITY.md](docs/SECURITY.md) — permissions, EMERGENCY_STOP, Tailscale
+
+---
+
+## License
+
+Business Source License 1.1 — free for personal and non-commercial use.
+For commercial use: see [COMMERCIAL.md](COMMERCIAL.md).
+Becomes MIT 4 years after the first public release.

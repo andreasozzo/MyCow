@@ -1,60 +1,60 @@
 # Skill: Git Workflow
 
-Usa questa skill per operazioni git con commit semantici e workflow pulito.
+Use this skill for git operations with semantic commits and a clean workflow.
 
-## Formato commit
+## Commit format
 
 ```
-<tipo>(<scope>): <descrizione breve>
+<type>(<scope>): <short description>
 
-[corpo opzionale]
+[optional body]
 ```
 
-Tipi:
-- `feat`: nuova funzionalità
+Types:
+- `feat`: new feature
 - `fix`: bug fix
-- `docs`: documentazione
-- `refactor`: refactoring senza cambio funzionalità
-- `test`: aggiunta/modifica test
-- `chore`: manutenzione (deps, config)
+- `docs`: documentation
+- `refactor`: refactoring without functional change
+- `test`: add/modify tests
+- `chore`: maintenance (deps, config)
 
-Esempi:
+Examples:
 ```
-feat(agents): aggiungi supporto multi-cron per agente
-fix(scheduler): correggi hot-reload su Windows
-docs(readme): aggiorna istruzioni installazione
+feat(agents): add multi-cron support per agent
+fix(scheduler): fix hot-reload on Windows
+docs(readme): update installation instructions
 ```
 
-## Operazioni comuni
+## Common operations
 
 ```bash
-# Controlla stato
+# Check status
 git status
 
-# Aggiungi file specifici (mai git add .)
+# Add specific files (never git add .)
 git add daemon/scheduler.py daemon/heartbeat.py
 
 # Commit
-git commit -m "feat(scheduler): aggiungi multi-cron per agente"
+git commit -m "feat(scheduler): add multi-cron per agent"
 
 # Push
 git push origin main
 ```
 
-## Regole
+## Rules
 
-- Mai `git add .` o `git add -A` — aggiungi file specifici
-- Mai committare `.env` o file con secrets
-- Un commit = una modifica logica
-- Messaggi in italiano o inglese, mai misti nello stesso repo
-- Branch feature: `feature/nome-feature`
-- Branch fix: `fix/nome-bug`
+- Never `git add .` or `git add -A` — add specific files
+- Never commit `.env` or files with secrets
+- One commit = one logical change
+- Messages in English, consistent throughout the repo
+- Feature branch: `feature/feature-name`
+- Fix branch: `fix/bug-name`
 
-## Permessi necessari
+## Required permissions
 
-Richiede `bash: true` e comandi specifici nel cron.yaml:
+Requires `bash: true` and specific commands in cron.yaml:
 ```yaml
 permissions:
   bash: true
-# In agent_runner viene mappato a: Bash(git *)
+# In agent_runner this maps to: Bash(git *)
 ```

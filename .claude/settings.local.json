@@ -12,7 +12,9 @@
       "Bash(python -c \"from daemon.telegram_bridge import TelegramBridge, sanitize_input; print\\('Import OK'\\); print\\(sanitize_input\\('ciao'\\)\\); print\\(sanitize_input\\('test --dangerously' \\)\\)\")",
       "Bash(python -c \"import telegram; print\\(telegram.__version__\\)\")",
       "Read(//tmp/**)",
-      "Read(//c/tmp/**)"
+      "Read(//c/tmp/**)",
+      "Bash(grep -c \"lang=\\\\\"it\\\\\"\" web/*.html)",
+      "Bash(grep -E \"Agente|agente|Skill|skill|avviato|fermato|italiano|italiano\" C:\\\\Users\\\\anso1\\\\source_cursor\\\\MyCow\\\\CLAUDE.md C:\\\\Users\\\\anso1\\\\source_cursor\\\\MyCow\\\\COMMERCIAL.md C:\\\\Users\\\\anso1\\\\source_cursor\\\\MyCow\\\\docs/*.md)"
     ],
     "additionalDirectories": [
       "\\tmp\\mycow-wiki",

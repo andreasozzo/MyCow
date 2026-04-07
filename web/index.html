@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -346,7 +346,7 @@
   <div class="header-right">
     <div class="daemon-badge">
       <div class="daemon-dot" id="daemonDot"></div>
-      <span id="daemonLabel">Connessione...</span>
+      <span id="daemonLabel">Connecting...</span>
     </div>
     <button class="btn btn-danger" onclick="openStopAll()">⬛ Stop All</button>
   </div>
@@ -357,15 +357,15 @@
   <div class="container">
     <div class="page-header">
       <div>
-        <div class="page-title">Agenti</div>
-        <div class="page-subtitle" id="agentCount">Caricamento...</div>
+        <div class="page-title">Agents</div>
+        <div class="page-subtitle" id="agentCount">Loading...</div>
       </div>
-      <a href="/wizard.html" class="btn btn-primary">+ Nuovo agente</a>
+      <a href="/wizard.html" class="btn btn-primary">+ New agent</a>
     </div>
     <div id="agentsContainer">
       <div class="loading">
         <div class="spinner"></div>
-        <div>Caricamento agenti...</div>
+        <div>Loading agents...</div>
       </div>
     </div>
   </div>
@@ -374,13 +374,13 @@
 <!-- MODAL STOP ALL -->
 <div class="overlay" id="stopAllOverlay" onclick="closeStopAll(event)">
   <div class="modal">
-    <div class="modal-title">Fermare tutti gli agenti?</div>
+    <div class="modal-title">Stop all agents?</div>
     <div class="modal-text">
-      Questa azione crea il file <code>EMERGENCY_STOP</code> e interrompe immediatamente tutti i cron e heartbeat attivi.
+      This action creates the <code>EMERGENCY_STOP</code> file and immediately halts all active cron jobs and heartbeats.
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeStopAll()">Annulla</button>
-      <button class="btn btn-danger" onclick="confirmStopAll()">⬛ Ferma tutto</button>
+      <button class="btn btn-ghost" onclick="closeStopAll()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmStopAll()">⬛ Stop everything</button>
     </div>
   </div>
 </div>
@@ -397,9 +397,9 @@
   <div class="chat-messages" id="chatMessages"></div>
   <div class="chat-input-area">
     <textarea class="chat-input" id="chatInput"
-      placeholder="Scrivi un messaggio..."
+      placeholder="Write a message..."
       onkeydown="chatKeydown(event)"></textarea>
-    <button class="btn btn-primary" onclick="sendChat()">Invia</button>
+    <button class="btn btn-primary" onclick="sendChat()">Send</button>
   </div>
 </div>
 
@@ -415,13 +415,13 @@
 
   // ── Utility ──
   function timeAgo(isoStr) {
-    if (!isoStr) return 'mai';
+    if (!isoStr) return 'never';
     const d = new Date(isoStr);
     const secs = Math.floor((Date.now() - d) / 1000);
-    if (secs < 60) return 'ora';
-    if (secs < 3600) return `${Math.floor(secs/60)} min fa`;
-    if (secs < 86400) return `${Math.floor(secs/3600)} ore fa`;
-    return `${Math.floor(secs/86400)} gg fa`;
+    if (secs < 60) return 'just now';
+    if (secs < 3600) return `${Math.floor(secs/60)} min ago`;
+    if (secs < 86400) return `${Math.floor(secs/3600)} hr ago`;
+    return `${Math.floor(secs/86400)} d ago`;
   }
 
   function fmtNext(isoStr) {
@@ -429,13 +429,13 @@
     const d = new Date(isoStr);
     const now = new Date();
     const diff = d - now;
-    if (diff < 60000) return 'tra poco';
-    if (diff < 3600000) return `tra ${Math.floor(diff/60000)} min`;
-    if (diff < 86400000) return `oggi ${d.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'})}`;
+    if (diff < 60000) return 'soon';
+    if (diff < 3600000) return `in ${Math.floor(diff/60000)} min`;
+    if (diff < 86400000) return `today ${d.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'})}`;
     const tom = new Date(now); tom.setDate(tom.getDate()+1);
     if (d.toDateString() === tom.toDateString())
-      return `domani ${d.toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'})}`;
-    return d.toLocaleDateString('it-IT', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+      return `tomorrow ${d.toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'})}`;
+    return d.toLocaleDateString('en-GB', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
   }
 
   function agentStatus(agent) {
@@ -449,11 +449,11 @@
 
   function badgeHtml(status) {
     const map = {
-      active: ['badge-active', 'Attivo'],
-      running: ['badge-running', 'In esecuzione'],
-      error: ['badge-error', 'Errore'],
-      paused: ['badge-paused', 'In pausa'],
-      idle: ['badge-idle', 'Inattivo'],
+      active: ['badge-active', 'Active'],
+      running: ['badge-running', 'Running'],
+      error: ['badge-error', 'Error'],
+      paused: ['badge-paused', 'Paused'],
+      idle: ['badge-idle', 'Idle'],
     };
     const [cls, label] = map[status] || ['badge-idle', status];
     return `<span class="badge ${cls}">${label}</span>`;
@@ -473,18 +473,18 @@
     const count = document.getElementById('agentCount');
 
     if (!data.length) {
-      count.textContent = 'Nessun agente';
+      count.textContent = 'No agents';
       container.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">🐄</div>
-          <div class="empty-title">Nessun agente configurato</div>
-          <div class="empty-text">Crea il tuo primo agente per iniziare.</div>
-          <a href="/wizard.html" class="btn btn-primary">+ Crea agente</a>
+          <div class="empty-title">No agents configured</div>
+          <div class="empty-text">Create your first agent to get started.</div>
+          <a href="/wizard.html" class="btn btn-primary">+ Create agent</a>
         </div>`;
       return;
     }
 
-    count.textContent = `${data.length} agent${data.length === 1 ? 'e' : 'i'}`;
+    count.textContent = `${data.length} agent${data.length === 1 ? '' : 's'}`;
 
     container.innerHTML = `<div class="agents-grid">${data.map(renderCard).join('')}</div>`;
   }
@@ -500,9 +500,9 @@
         <div class="cron-item">
           <span class="cron-id">${c.cron_id || c.id || 'cron'}</span>
           <span class="cron-meta">
-            prossimo: ${fmtNext(c.next_run)}
+            next: ${fmtNext(c.next_run)}
             &nbsp;·&nbsp;
-            ultimo: ${timeAgo(c.last_run)}
+            last: ${timeAgo(c.last_run)}
           </span>
         </div>`).join('');
       cronsHtml = `
@@ -522,9 +522,9 @@
           <div class="section-label">💓 Heartbeat</div>
           <div class="hb-row">
             <div class="hb-dot ${isActive ? 'active' : ''}"></div>
-            <span>ogni ${Math.floor(hb.interval/60)} min</span>
+            <span>every ${Math.floor(hb.interval/60)} min</span>
             <span style="color:var(--color-text-muted)">·</span>
-            <span>ultimo: ${timeAgo(hb.last_tick)}</span>
+            <span>last: ${timeAgo(hb.last_tick)}</span>
           </div>
         </div>`;
     }
@@ -550,11 +550,11 @@
         <div class="card-actions">
           <button class="btn btn-primary" onclick="runAgent('${agent.name}')">▶ Run</button>
           ${isPaused
-            ? `<button class="btn btn-ghost" onclick="resumeAgent('${agent.name}')">▷ Riprendi</button>`
-            : `<button class="btn btn-ghost" onclick="pauseAgent('${agent.name}')">⏸ Pausa</button>`}
+            ? `<button class="btn btn-ghost" onclick="resumeAgent('${agent.name}')">▷ Resume</button>`
+            : `<button class="btn btn-ghost" onclick="pauseAgent('${agent.name}')">⏸ Pause</button>`}
           <button class="btn btn-ghost" onclick="openChat('${agent.name}')">💬 Chat</button>
           <div class="spacer"></div>
-          <a href="/agent.html?name=${agent.name}" class="btn btn-ghost">→ Dettaglio</a>
+          <a href="/agent.html?name=${agent.name}" class="btn btn-ghost">→ Details</a>
         </div>
       </div>`;
   }
@@ -567,7 +567,7 @@
       const data = await res.json();
       renderAgents(data);
     } catch (e) {
-      console.error('Errore fetch agenti:', e);
+      console.error('Error fetching agents:', e);
     }
   }
 
@@ -590,24 +590,24 @@
     try {
       const res = await fetch(`/api/agents/${name}/run`, { method: 'POST' });
       const data = await res.json();
-      showToast(res.ok ? `${name} avviato` : data.message, res.ok ? 'success' : 'error');
-    } catch { showToast('Errore di rete', 'error'); }
+      showToast(res.ok ? `${name} started` : data.message, res.ok ? 'success' : 'error');
+    } catch { showToast('Network error', 'error'); }
   }
 
   async function pauseAgent(name) {
     try {
       await fetch(`/api/agents/${name}/pause`, { method: 'POST' });
-      showToast(`${name} in pausa`);
+      showToast(`${name} paused`);
       fetchAgents();
-    } catch { showToast('Errore di rete', 'error'); }
+    } catch { showToast('Network error', 'error'); }
   }
 
   async function resumeAgent(name) {
     try {
       await fetch(`/api/agents/${name}/resume`, { method: 'POST' });
-      showToast(`${name} ripreso`, 'success');
+      showToast(`${name} resumed`, 'success');
       fetchAgents();
-    } catch { showToast('Errore di rete', 'error'); }
+    } catch { showToast('Network error', 'error'); }
   }
 
   // ── Stop All ──
@@ -620,9 +620,9 @@
     try {
       await fetch('/api/stop-all', { method: 'POST' });
       closeStopAll();
-      showToast('Emergency Stop attivato', 'error');
+      showToast('Emergency Stop activated', 'error');
       fetchHealth(); fetchAgents();
-    } catch { showToast('Errore di rete', 'error'); }
+    } catch { showToast('Network error', 'error'); }
   }
 
   // ── Chat ──
@@ -634,7 +634,7 @@
     document.getElementById('chatPanel').classList.add('open');
     document.getElementById('chatInput').focus();
     lastPollTimestamp = null;
-    // Carica storico chat dai log
+    // Load chat history from logs
     try {
       const r = await fetch(`/api/agents/${name}/logs?limit=50`);
       if (r.ok) {
@@ -684,17 +684,17 @@
     if (!text || !chatAgent) return;
     input.value = '';
 
-    const now = new Date().toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
+    const now = new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
     appendMsg('user', text, now);
 
-    // Aggiungi loading bubble
+    // Add loading bubble
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'chat-msg agent';
-    loadingDiv.innerHTML = `<div class="chat-bubble loading-bubble"><div class="spinner" style="width:16px;height:16px;margin:0"></div> Elaborazione...</div>`;
+    loadingDiv.innerHTML = `<div class="chat-bubble loading-bubble"><div class="spinner" style="width:16px;height:16px;margin:0"></div> Processing...</div>`;
     document.getElementById('chatMessages').appendChild(loadingDiv);
     document.getElementById('chatMessages').scrollTop = 99999;
 
-    // Memorizza timestamp prima dell'invio
+    // Store timestamp before sending
     const sentAt = new Date().toISOString();
 
     try {
@@ -705,12 +705,12 @@
       });
       if (!res.ok) {
         loadingDiv.remove();
-        appendMsg('agent', 'Errore: ' + (await res.json()).message, now);
+        appendMsg('agent', 'Error: ' + (await res.json()).message, now);
         return;
       }
     } catch {
       loadingDiv.remove();
-      appendMsg('agent', 'Errore di rete', now);
+      appendMsg('agent', 'Network error', now);
       return;
     }
 
@@ -722,13 +722,13 @@
       if (attempts > maxAttempts) {
         clearInterval(poll);
         loadingDiv.remove();
-        appendMsg('agent', 'Timeout: nessuna risposta dopo 2 minuti.', '');
+        appendMsg('agent', 'Timeout: no response after 2 minutes.', '');
         return;
       }
       try {
         const r = await fetch(`/api/agents/${chatAgent}/logs?limit=5`);
         const logs = await r.json();
-        // Cerca log con trigger "chat" più recente del momento di invio
+        // Find the most recent "chat" log after the send time
         const found = logs.find(l =>
           l.trigger === 'chat' &&
           new Date(l.timestamp) >= new Date(sentAt) &&
@@ -737,11 +737,11 @@
         if (found) {
           clearInterval(poll);
           loadingDiv.remove();
-          const replyTs = new Date(found.timestamp).toLocaleTimeString('it-IT', {hour:'2-digit',minute:'2-digit'});
-          const reply = found.output || (found.status === 'error' ? `Errore: ${found.error}` : '(nessun output)');
+          const replyTs = new Date(found.timestamp).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'});
+          const reply = found.output || (found.status === 'error' ? `Error: ${found.error}` : '(no output)');
           appendMsg('agent', reply, replyTs);
         }
-      } catch { /* ignora errori polling */ }
+      } catch { /* ignore polling errors */ }
     }, 2000);
   }
 

@@ -1,12 +1,12 @@
 # Skill: Brave Search
 
-Usa questa skill per cercare informazioni sul web tramite Brave Search API.
+Use this skill to search for information on the web via the Brave Search API.
 
-## Come usarla
+## How to use it
 
-Usa il tool `WebSearch` — Claude Code lo chiama automaticamente quando hai `internet: true` nei permessi.
+Use the `WebSearch` tool — Claude Code calls it automatically when you have `internet: true` in your permissions.
 
-Se hai bisogno di controllare i risultati manualmente, la Brave Search API risponde a:
+If you need to check results manually, the Brave Search API responds at:
 
 ```
 GET https://api.search.brave.com/res/v1/web/search
@@ -15,21 +15,21 @@ Headers:
   Accept-Encoding: gzip
   X-Subscription-Token: {BRAVE_API_KEY}
 Query params:
-  q: termine di ricerca
-  count: numero risultati (max 20, default 10)
-  search_lang: it (italiano) o en (inglese)
-  freshness: pd (oggi), pw (settimana), pm (mese)
+  q: search term
+  count: number of results (max 20, default 10)
+  search_lang: it (Italian) or en (English)
+  freshness: pd (today), pw (week), pm (month)
 ```
 
-## Parsing risultati
+## Parsing results
 
-La risposta JSON ha struttura:
+The JSON response has this structure:
 ```json
 {
   "web": {
     "results": [
       {
-        "title": "Titolo pagina",
+        "title": "Page title",
         "url": "https://...",
         "description": "Snippet...",
         "age": "2026-04-01T..."
@@ -39,15 +39,15 @@ La risposta JSON ha struttura:
 }
 ```
 
-## Gestione errori
+## Error handling
 
-- 401: BRAVE_API_KEY non valida o mancante
-- 429: rate limit superato — attendi 1 secondo e riprova una volta
-- 422: query non valida — semplifica il termine di ricerca
+- 401: BRAVE_API_KEY is invalid or missing
+- 429: rate limit exceeded — wait 1 second and retry once
+- 422: invalid query — simplify the search term
 
-## Best practice
+## Best practices
 
-- Usa query brevi e precise (max 5-7 parole)
-- Per news recenti aggiungi `freshness: pd`
-- Per contenuto italiano usa `search_lang: it`
-- Non fare più di 10 ricerche per run
+- Use short, precise queries (max 5-7 words)
+- For recent news add `freshness: pd`
+- For English content use `search_lang: en`
+- Do not make more than 10 searches per run

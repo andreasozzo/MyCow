@@ -1,20 +1,20 @@
 """
 MyCow CronScheduler
-Gestisce l'esecuzione pianificata degli agenti via APScheduler.
+Manages scheduled agent execution via APScheduler.
 
-Formato cron.yaml supportato:
+Supported cron.yaml format:
   crons:
     - id: morning
       schedule: "0 8 * * *"
       model: claude-haiku-4-5-20251001
-      prompt: "Testo del prompt..."
+      prompt: "Prompt text..."
     - id: evening
       schedule: "0 18 * * *"
       model: claude-sonnet-4-6
-      prompt: "Altro prompt..."
+      prompt: "Another prompt..."
 
-Job ID interno: "{agent_name}__{cron_id}"
-Supporta hot-reload: modifica cron.yaml senza riavviare il daemon.
+Internal job ID: "{agent_name}__{cron_id}"
+Supports hot-reload: modify cron.yaml without restarting the daemon.
 """
 
 import json
@@ -33,8 +33,8 @@ ROOT_DIR = Path(__file__).parent.parent
 AGENTS_DIR = ROOT_DIR / "agents"
 EMERGENCY_STOP_FILE = ROOT_DIR / "EMERGENCY_STOP"
 
-HOT_RELOAD_INTERVAL = 30  # secondi
-JOB_SEP = "__"  # separatore agent_name e cron_id nel job ID
+HOT_RELOAD_INTERVAL = 30  # seconds
+JOB_SEP = "__"  # separator between agent_name and cron_id in job ID
 
 
 def _job_id(agent_name: str, cron_id: str) -> str:
@@ -54,13 +54,13 @@ class CronScheduler:
         self._yaml_mtimes: dict[str, float] = {}
 
     # ------------------------------------------------------------------
-    # Pubblici
+    # Public
     # ------------------------------------------------------------------
 
     def start(self):
         self._register_all_agents()
         self._scheduler.start()
-        logger.info("CronScheduler avviato. Job attivi: %d", len(self._scheduler.get_jobs()))
+        logger.info("CronScheduler started. Active jobs: %d", len(self._scheduler.get_jobs()))
         self._start_hot_reload()
 
     def stop(self):
@@ -68,10 +68,10 @@ class CronScheduler:
         if self._reload_thread and self._reload_thread.is_alive():
             self._reload_thread.join(timeout=5)
         self._scheduler.shutdown(wait=False)
-        logger.info("CronScheduler fermato.")
+        logger.info("CronScheduler stopped.")
 
     def pause_agent(self, agent_name: str):
-        """Mette in pausa tutti i cron di un agente."""
+        """Pauses all crons for an agent."""
         paused = 0
         for job in self._scheduler.get_jobs():
             name, _ = _parse_job_id(job.id)
@@ -80,11 +80,11 @@ class CronScheduler:
                     self._scheduler.pause_job(job.id)
                     paused += 1
                 except Exception as e:
-                    logger.warning("[%s] pause fallito per job %s: %s", agent_name, job.id, e)
-        logger.info("[%s] %d cron in pausa.", agent_name, paused)
+                    logger.warning("[%s] pause failed for job %s: %s", agent_name, job.id, e)
+        logger.info("[%s] %d cron(s) paused.", agent_name, paused)
 
     def resume_agent(self, agent_name: str):
-        """Riprende tutti i cron di un agente."""
+        """Resumes all crons for an agent."""
         resumed = 0
         for job in self._scheduler.get_jobs():
             name, _ = _parse_job_id(job.id)
@@ -93,11 +93,11 @@ class CronScheduler:
                     self._scheduler.resume_job(job.id)
                     resumed += 1
                 except Exception as e:
-                    logger.warning("[%s] resume fallito per job %s: %s", agent_name, job.id, e)
-        logger.info("[%s] %d cron ripresi.", agent_name, resumed)
+                    logger.warning("[%s] resume failed for job %s: %s", agent_name, job.id, e)
+        logger.info("[%s] %d cron(s) resumed.", agent_name, resumed)
 
     def list_jobs(self) -> list[dict]:
-        """Restituisce tutti i job con stato e prossima esecuzione."""
+        """Returns all jobs with their status and next run time."""
         jobs = []
         registered_agents = set()
 
@@ -115,7 +115,7 @@ class CronScheduler:
                 "status": "paused" if nrt is None else "active",
             })
 
-        # Agenti senza job (disabilitati o senza crons)
+        # Agents without jobs (disabled or without crons)
         if AGENTS_DIR.exists():
             for agent_dir in AGENTS_DIR.iterdir():
                 if agent_dir.is_dir() and agent_dir.name not in registered_agents:
@@ -131,7 +131,7 @@ class CronScheduler:
         return jobs
 
     # ------------------------------------------------------------------
-    # Privati — registrazione job
+    # Private — job registration
     # ------------------------------------------------------------------
 
     def _register_all_agents(self):
@@ -148,22 +148,22 @@ class CronScheduler:
 
         crons = config.get("crons", [])
         if not crons:
-            logger.debug("[%s] Nessun cron configurato.", agent_name)
+            logger.debug("[%s] No cron configured.", agent_name)
             return
 
-        # Rimuovi tutti i job esistenti dell'agente (hot-reload)
+        # Remove all existing jobs for the agent (hot-reload)
         self._unregister_agent(agent_name)
 
         for entry in crons:
             cron_id = entry.get("id") or entry.get("name", "default")
             schedule = entry.get("schedule")
             if not schedule:
-                logger.warning("[%s][%s] Campo 'schedule' mancante - skip.", agent_name, cron_id)
+                logger.warning("[%s][%s] Missing 'schedule' field - skipping.", agent_name, cron_id)
                 continue
             try:
                 trigger = CronTrigger.from_crontab(schedule, timezone="UTC")
             except Exception as e:
-                logger.error("[%s][%s] Cron expression non valida '%s': %s", agent_name, cron_id, schedule, e)
+                logger.error("[%s][%s] Invalid cron expression '%s': %s", agent_name, cron_id, schedule, e)
                 continue
 
             jid = _job_id(agent_name, cron_id)
@@ -178,33 +178,33 @@ class CronScheduler:
                 misfire_grace_time=300,
             )
             logger.info("[%s][%s] Cron registrato: %s model=%s",
-                        agent_name, cron_id, schedule, entry.get("model", "default"))
+                        agent_name, cron_id, schedule, entry.get("model", "default"))  # noqa
 
     def _unregister_agent(self, agent_name: str):
         for job in self._scheduler.get_jobs():
             name, _ = _parse_job_id(job.id)
             if name == agent_name:
                 self._scheduler.remove_job(job.id)
-                logger.debug("[%s] Job rimosso: %s", agent_name, job.id)
+                logger.debug("[%s] Job removed: %s", agent_name, job.id)
 
     # ------------------------------------------------------------------
-    # Privati — esecuzione job
+    # Private — job execution
     # ------------------------------------------------------------------
 
     def _run_cron_entry(self, agent_name: str, entry: dict, config: dict):
         cron_id = entry.get("id") or entry.get("name", "default")
 
         if EMERGENCY_STOP_FILE.exists():
-            logger.warning("[%s][%s] EMERGENCY_STOP attivo - skip.", agent_name, cron_id)
+            logger.warning("[%s][%s] EMERGENCY_STOP active - skipping.", agent_name, cron_id)
             return
 
         prompt = entry.get("prompt", "").strip()
         if not prompt:
-            logger.warning("[%s][%s] Campo 'prompt' mancante nel cron - skip.", agent_name, cron_id)
+            logger.warning("[%s][%s] Missing 'prompt' field in cron - skipping.", agent_name, cron_id)
             return
 
         model = entry.get("model") or config.get("model")
-        logger.info("[%s][%s] Avvio. model=%s", agent_name, cron_id, model or "default")
+        logger.info("[%s][%s] Starting. model=%s", agent_name, cron_id, model or "default")
 
         try:
             from daemon.agent_runner import run_agent
@@ -216,13 +216,13 @@ class CronScheduler:
                 model=model,
             )
             if result.get("status") != "success":
-                self._notify_error(agent_name, cron_id, result.get("error", "Errore sconosciuto"), config)
+                self._notify_error(agent_name, cron_id, result.get("error", "Unknown error"), config)
         except Exception as e:
-            logger.exception("[%s][%s] Errore inatteso: %s", agent_name, cron_id, e)
+            logger.exception("[%s][%s] Unexpected error: %s", agent_name, cron_id, e)
             self._notify_error(agent_name, cron_id, str(e), config)
 
     # ------------------------------------------------------------------
-    # Privati — lettura config
+    # Private — config loading
     # ------------------------------------------------------------------
 
     def _load_config(self, agent_name: str) -> dict | None:
@@ -233,14 +233,14 @@ class CronScheduler:
             with open(yaml_path, encoding="utf-8") as f:
                 config = yaml.safe_load(f) or {}
         except Exception as e:
-            logger.error("[%s] Errore lettura cron.yaml: %s", agent_name, e)
+            logger.error("[%s] Error reading cron.yaml: %s", agent_name, e)
             return None
         if not config.get("enabled", True):
             return None
         return config
 
     # ------------------------------------------------------------------
-    # Privati — hot-reload
+    # Private — hot-reload
     # ------------------------------------------------------------------
 
     def _start_hot_reload(self):
@@ -257,7 +257,7 @@ class CronScheduler:
 
             for name, mtime in current.items():
                 if self._yaml_mtimes.get(name) != mtime:
-                    logger.info("[%s] cron.yaml modificato - aggiorno job.", name)
+                    logger.info("[%s] cron.yaml changed - updating jobs.", name)
                     self._register_agent(name)
 
             for name in self._yaml_mtimes:
@@ -277,7 +277,7 @@ class CronScheduler:
         return mtimes
 
     # ------------------------------------------------------------------
-    # Privati — utility
+    # Private — utilities
     # ------------------------------------------------------------------
 
     def _get_last_run(self, agent_name: str, cron_id: str) -> str | None:
@@ -307,9 +307,9 @@ class CronScheduler:
             chat_id = config.get("telegram_chat_id") or os.environ.get("TELEGRAM_CHAT_ID")
             if chat_id:
                 TelegramBridge().send_message(
-                    f"[{agent_name}][{cron_id}] Errore: {error}", chat_id=chat_id
+                    f"[{agent_name}][{cron_id}] Error: {error}", chat_id=chat_id
                 )
         except ImportError:
             pass
         except Exception as e:
-            logger.debug("Notifica Telegram fallita: %s", e)
+            logger.debug("Telegram notification failed: %s", e)

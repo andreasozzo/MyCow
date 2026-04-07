@@ -1,121 +1,121 @@
 # MyCow 🐄
 
-## Cos'è MyCow
-MyCow è un layer proattivo per Claude Code. Permette di creare agenti autonomi con heartbeat, cron schedulati e comunicazione bidirezionale via Telegram. Gli agenti lavorano mentre l'utente non sta guardando.
+## What is MyCow
+MyCow is a proactive layer for Claude Code. It lets you create autonomous agents with heartbeats, scheduled crons, and bidirectional communication via Telegram. Agents work while the user is not watching.
 
-**Posizionamento:** Semplice dove OpenClaw è complesso. Sicuro dove OpenClaw è pericoloso. Focalizzato dove altri framework sono generici.
+**Positioning:** Simple where OpenClaw is complex. Secure where OpenClaw is dangerous. Focused where other frameworks are generic.
 
 ---
 
-## Decisioni Architetturali (non riaprire senza motivo)
+## Architecture Decisions (do not revisit without good reason)
 
 ### Stack
-- **Daemon:** Python 3.11+ — cross-platform, zero compilazione
-- **Scheduler:** APScheduler — cron in-process, no dipendenze esterne
-- **Telegram:** python-telegram-bot — asincrono, bidirezionale
-- **Web UI:** HTML/JS/CSS puro servito dal daemon Python — zero build step
-- **Web Search:** Brave Search API — privata, economica, API semplice
-- **Web Fetch:** requests + BeautifulSoup — leggero, no browser
-- **AI Core:** Claude Code CLI in subprocess non-interattivo
+- **Daemon:** Python 3.11+ — cross-platform, zero compilation
+- **Scheduler:** APScheduler — in-process cron, no external dependencies
+- **Telegram:** python-telegram-bot — async, bidirectional
+- **Web UI:** Pure HTML/JS/CSS served by the Python daemon — zero build step
+- **Web Search:** Brave Search API — private, affordable, simple API
+- **Web Fetch:** requests + BeautifulSoup — lightweight, no browser
+- **AI Core:** Claude Code CLI in non-interactive subprocess
 
-### Perché HTML/JS puro e non Next.js/React
-Zero build step, zero Node dipendenza per la UI, `pip install mycow && mycow start` apre il browser. La UI può evolversi dopo senza cambiare architettura.
+### Why pure HTML/JS and not Next.js/React
+Zero build step, zero Node dependency for the UI, `pip install mycow && mycow start` opens the browser. The UI can evolve later without changing the architecture.
 
-### Perché non Docker
-Barriera troppo alta per il target. MyCow deve installarsi in 2 minuti.
+### Why not Docker
+Too high a barrier for the target user. MyCow must install in 2 minutes.
 
-### Claude Code CLI — Come si wrappa
+### Claude Code CLI — How to wrap it
 ```bash
-# Comando base non-interattivo
+# Base non-interactive command
 claude -p "prompt" \
   --allowedTools "Read,Write,Bash(git *)" \
   --output-format json \
   --max-turns 10 \
-  --working-dir agents/nome/
+  --working-dir agents/name/
 
-# Flags importanti
-# -p / --print       → non-interattivo, stampa e termina
+# Important flags
+# -p / --print       → non-interactive, print and exit
 # --output-format    → text | json | stream-json
-# --allowedTools     → permessi espliciti (mai --dangerously-skip-permissions)
-# --max-turns        → limite iterazioni per sicurezza
-# --append-system-prompt → aggiunge istruzioni senza sostituire il default
-# --continue         → riprende ultima sessione
-# --bare             → skip auto-discovery (per CI/script puri)
+# --allowedTools     → explicit permissions (never --dangerously-skip-permissions)
+# --max-turns        → iteration limit for safety
+# --append-system-prompt → adds instructions without replacing the default
+# --continue         → resumes last session
+# --bare             → skip auto-discovery (for CI/pure scripts)
 ```
 
-**Gotcha noto:** Claude Code CLI può bloccarsi senza TTY nonostante `-p`. Usare sempre timeout espliciti nel subprocess Python.
+**Known gotcha:** Claude Code CLI can hang without a TTY despite `-p`. Always use explicit timeouts in the Python subprocess.
 
 ```python
 result = subprocess.run(
     ["claude", "-p", prompt, "--output-format", "json"],
     capture_output=True,
     text=True,
-    timeout=300,  # sempre timeout
+    timeout=300,  # always timeout
     cwd=agent_working_dir
 )
 ```
 
 ---
 
-## Struttura Repository
+## Repository Structure
 
 ```
 mycow/
   daemon/
-    main.py              # entrypoint, avvia tutto
-    scheduler.py         # APScheduler, gestisce cron agenti
-    agent_runner.py      # wrappa Claude Code CLI in subprocess
-    telegram_bridge.py   # bot Telegram bidirezionale
-    api.py               # API REST locale (localhost:3333)
+    main.py              # entrypoint, starts everything
+    scheduler.py         # APScheduler, manages agent crons
+    agent_runner.py      # wraps Claude Code CLI in subprocess
+    telegram_bridge.py   # bidirectional Telegram bot
+    api.py               # local REST API (localhost:3333)
   web/
-    index.html           # dashboard agenti
-    agent.html           # dettaglio agente + log
-    wizard.html          # crea nuovo agente
-    skills.html          # gestione skill
-    settings.html        # configurazione globale
+    index.html           # agent dashboard
+    agent.html           # agent detail + log
+    wizard.html          # create new agent
+    skills.html          # skill management
+    settings.html        # global configuration
     assets/
       app.js
       style.css
-  agents/                # cartelle agenti (gitignore contenuto sensibile)
+  agents/                # agent folders (gitignore sensitive content)
     .gitkeep
   skills/
-    global/              # skill condivise tra tutti gli agenti
-    manifest/            # manifest YAML delle skill installate
+    global/              # skills shared across all agents
+    manifest/            # YAML manifest of installed skills
   install/
     install.ps1          # Windows
     install.sh           # Mac/Linux
-  CLAUDE.md              # questo file
-  COMMERCIAL.md          # info licenza commerciale
+  CLAUDE.md              # this file
+  COMMERCIAL.md          # commercial license info
   LICENSE                # BSL 1.1
   README.md
 ```
 
 ---
 
-## Struttura Agente
+## Agent Structure
 
-Ogni agente è una cartella autonoma generata dal wizard:
+Each agent is a self-contained folder generated by the wizard:
 
 ```
 agents/
   agent-name/
-    CLAUDE.md            # identità, obiettivi, comportamenti, skill attive
-    cron.yaml            # schedule e trigger
+    CLAUDE.md            # identity, goals, behaviors, active skills
+    cron.yaml            # schedule and triggers
     memory/
-      core.md            # fatti stabili, non cambia spesso
-      working.md         # stato corrente, task in corso
-      decisions.md       # log decisioni prese dall'agente
-    skills/              # symlink o copia dalle global skills
+      core.md            # stable facts, rarely changes
+      working.md         # current state, tasks in progress
+      decisions.md       # log of decisions made by the agent
+    skills/              # symlinks or copies from global skills
     .claude/
-      settings.json      # permessi espliciti Claude Code
+      settings.json      # explicit Claude Code permissions
 ```
 
-### Formato cron.yaml
+### cron.yaml format
 ```yaml
 name: news-monitor
 enabled: true
-schedule: "0 8 * * *"      # ogni mattina alle 8
-heartbeat: 3600            # heartbeat ogni ora (secondi)
+schedule: "0 8 * * *"      # every morning at 8
+heartbeat: 3600            # heartbeat every hour (seconds)
 telegram_chat_id: "xxxxx"
 permissions:
   bash: false
@@ -128,7 +128,7 @@ permissions:
 
 ## Skill System
 
-Le skill sono file markdown con istruzioni operative + manifest YAML.
+Skills are markdown files with operational instructions + YAML manifest.
 
 ```
 skills/
@@ -147,60 +147,60 @@ skills/
       manifest.yaml
 ```
 
-### Formato manifest.yaml
+### manifest.yaml format
 ```yaml
 name: brave-search
 version: 1.0.0
-description: Cerca sul web via Brave Search API
+description: Search the web via Brave Search API
 requires_env:
   - BRAVE_API_KEY
 mcp_server: null
 ```
 
-Il CLAUDE.md di ogni agente include le skill attive con riferimento al file:
+Each agent's CLAUDE.md includes active skills with a reference to the file:
 ```markdown
-## Skills Attive
+## Active Skills
 - ../../../skills/global/brave-search/skill.md
 - ../../../skills/global/telegram-notify/skill.md
 ```
 
 ---
 
-## Sicurezza — Principi Non Negoziabili
+## Security — Non-Negotiable Principles
 
-1. **Permessi opt-in** — ogni agente ha permessi espliciti. Tutto il resto è negato.
-2. **Mai `--dangerously-skip-permissions`** — usare sempre `--allowedTools` con least privilege.
-3. **Timeout sempre** — ogni subprocess Claude Code ha timeout esplicito.
-4. **Nessuna porta aperta di default** — Telegram è pull-based, Tailscale è opzionale.
-5. **Kill switch globale** — `/stop` su Telegram ferma tutti gli agenti immediatamente.
-6. **Secrets in .env** — mai in CLAUDE.md o file versionati.
+1. **Opt-in permissions** — each agent has explicit permissions. Everything else is denied.
+2. **Never `--dangerously-skip-permissions`** — always use `--allowedTools` with least privilege.
+3. **Always timeout** — every Claude Code subprocess has an explicit timeout.
+4. **No open ports by default** — Telegram is pull-based, Tailscale is optional.
+5. **Global kill switch** — `/stop` on Telegram stops all agents immediately.
+6. **Secrets in .env** — never in CLAUDE.md or versioned files.
 
 ---
 
-## Licenza
+## License
 
 **Business Source License 1.1 (BSL 1.1)**
-- Uso personale/non commerciale: gratuito
-- Uso commerciale: richiede licenza (contatto in COMMERCIAL.md)
-- Change Date: 4 anni dalla prima release pubblica → diventa MIT
+- Personal/non-commercial use: free
+- Commercial use: requires a license (contact in COMMERCIAL.md)
+- Change Date: 4 years from the first public release → becomes MIT
 
 ---
 
-## Contesto di Sviluppo
+## Development Context
 
-- **OS sviluppo primario:** Windows, PowerShell nativo
-- **Target utente:** Developer/power user con Claude Code già installato
-- **Prerequisiti utente:** Node.js + Claude Code CLI + Python 3.11+
-- **Installer Windows:** `irm https://mycow.dev/install.ps1 | iex`
+- **Primary development OS:** Windows, native PowerShell
+- **Target user:** Developer/power user with Claude Code already installed
+- **User prerequisites:** Node.js + Claude Code CLI + Python 3.11+
+- **Windows installer:** `irm https://mycow.dev/install.ps1 | iex`
 
 ---
 
-## Cosa NON fare
+## What NOT to do
 
-- Non aggiungere Docker come requisito
-- Non usare framework frontend complessi (React, Next.js, Vue) — HTML/JS puro
-- Non aprire porte di rete senza Tailscale
-- Non usare `--dangerously-skip-permissions`
-- Non fare feature creep — lo scope V1 è fisso
-- Non reinventare Claude Code — wrapparlo, non sostituirlo
-- Non usare database complessi — file JSON/YAML/Markdown sono sufficienti per V1
+- Do not add Docker as a requirement
+- Do not use complex frontend frameworks (React, Next.js, Vue) — pure HTML/JS
+- Do not open network ports without Tailscale
+- Do not use `--dangerously-skip-permissions`
+- Do not feature creep — the V1 scope is fixed
+- Do not reinvent Claude Code — wrap it, don't replace it
+- Do not use complex databases — JSON/YAML/Markdown files are sufficient for V1

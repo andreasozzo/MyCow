@@ -1,8 +1,8 @@
 """
 MyCow HeartbeatManager
-Loop autonomo che fa valutare agli agenti se agire ogni N secondi.
-Differenza chiave vs CronScheduler: il cron ESEGUE sempre,
-il heartbeat lascia decidere all'agente se agire o no.
+Autonomous loop that lets agents decide whether to act every N seconds.
+Key difference vs CronScheduler: the cron ALWAYS executes,
+the heartbeat lets the agent decide whether to act or not.
 """
 
 import logging
@@ -31,30 +31,30 @@ class HeartbeatManager:
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------------
-    # Pubblici
+    # Public
     # ------------------------------------------------------------------
 
     def start(self):
         self._stop_event.clear()
         self._reload_agents()
-        logger.info("HeartbeatManager avviato. Agenti: %d", len(self._threads))
+        logger.info("HeartbeatManager started. Agents: %d", len(self._threads))
 
     def stop(self):
         self._stop_event.set()
         for name, t in list(self._threads.items()):
             t.join(timeout=5)
         self._threads.clear()
-        logger.info("HeartbeatManager fermato.")
+        logger.info("HeartbeatManager stopped.")
 
     def pause_agent(self, name: str):
         with self._lock:
             self._paused.add(name)
-        logger.info("[%s] Heartbeat in pausa.", name)
+        logger.info("[%s] Heartbeat paused.", name)
 
     def resume_agent(self, name: str):
         with self._lock:
             self._paused.discard(name)
-        logger.info("[%s] Heartbeat ripreso.", name)
+        logger.info("[%s] Heartbeat resumed.", name)
 
     def get_status(self) -> list[dict]:
         statuses = []
@@ -97,7 +97,7 @@ class HeartbeatManager:
         return statuses
 
     # ------------------------------------------------------------------
-    # Privati — caricamento agenti
+    # Private — agent loading
     # ------------------------------------------------------------------
 
     def _reload_agents(self):
@@ -122,7 +122,7 @@ class HeartbeatManager:
                 )
                 self._threads[name] = t
                 t.start()
-                logger.info("[%s] Heartbeat avviato (intervallo: %ds).", name, interval)
+                logger.info("[%s] Heartbeat started (interval: %ds).", name, interval)
 
     def _load_heartbeat_config(self, name: str) -> dict | None:
         yaml_path = AGENTS_DIR / name / "cron.yaml"
@@ -132,19 +132,19 @@ class HeartbeatManager:
             with open(yaml_path, encoding="utf-8") as f:
                 config = yaml.safe_load(f) or {}
         except Exception as e:
-            logger.error("[%s] Errore lettura cron.yaml: %s", name, e)
+            logger.error("[%s] Error reading cron.yaml: %s", name, e)
             return None
         if not config.get("enabled", True):
             return None
         return config
 
     # ------------------------------------------------------------------
-    # Privati — loop heartbeat
+    # Private — heartbeat loop
     # ------------------------------------------------------------------
 
     def _heartbeat_loop(self, name: str, interval: int):
         while not self._stop_event.is_set():
-            # Attendi l'intervallo (o stop anticipato)
+            # Wait for the interval (or early stop)
             self._stop_event.wait(timeout=interval)
             if self._stop_event.is_set():
                 break
@@ -156,7 +156,7 @@ class HeartbeatManager:
                 continue
 
             if EMERGENCY_STOP_FILE.exists():
-                logger.warning("[%s] EMERGENCY_STOP attivo - heartbeat skippato.", name)
+                logger.warning("[%s] EMERGENCY_STOP active - heartbeat skipped.", name)
                 continue
 
             self._tick(name, interval)
@@ -168,14 +168,14 @@ class HeartbeatManager:
 
         prompt = self._extract_heartbeat_prompt(name)
         if not prompt:
-            logger.warning("[%s] Nessun ## Heartbeat Behavior in CLAUDE.md - skip.", name)
+            logger.warning("[%s] No ## Heartbeat Behavior section in CLAUDE.md - skipping.", name)
             return
 
-        # Timeout = min(interval * 0.8, 300)
+        # Timeout = min(interval * 0.8, 300) seconds
         timeout = int(min(interval * 0.8, 300))
 
         tick_start = time.monotonic()
-        logger.info("[%s] Heartbeat tick.", name)
+        logger.info("[%s] Heartbeat tick.", name)  # noqa
 
         try:
             from daemon.agent_runner import run_agent
@@ -189,24 +189,24 @@ class HeartbeatManager:
             )
             duration = time.monotonic() - tick_start
 
-            # Warn se impiega più del doppio dell'intervallo
+            # Warn if it takes more than twice the interval
             if duration > interval * 2:
-                msg = f"Heartbeat lento: {duration:.0f}s (intervallo {interval}s)"
+                msg = f"Slow heartbeat: {duration:.0f}s (interval {interval}s)"
                 logger.warning("[%s] %s", name, msg)
                 self._notify_telegram(name, msg, config)
 
             if result.get("status") != "success":
-                self._notify_telegram(name, f"Errore heartbeat: {result.get('error')}", config)
+                self._notify_telegram(name, f"Heartbeat error: {result.get('error')}", config)
 
         except Exception as e:
-            logger.exception("[%s] Errore inatteso nel heartbeat: %s", name, e)
-            self._notify_telegram(name, f"Crash heartbeat: {e}", config)
+            logger.exception("[%s] Unexpected error in heartbeat: %s", name, e)
+            self._notify_telegram(name, f"Heartbeat crash: {e}", config)
 
         with self._lock:
             self._last_tick[name] = datetime.now(timezone.utc).isoformat()
 
     # ------------------------------------------------------------------
-    # Privati — lettura prompt
+    # Private — prompt reading
     # ------------------------------------------------------------------
 
     def _extract_heartbeat_prompt(self, name: str) -> str:
@@ -229,7 +229,7 @@ class HeartbeatManager:
         return ""
 
     # ------------------------------------------------------------------
-    # Privati — notifiche
+    # Private — notifications
     # ------------------------------------------------------------------
 
     def _notify_telegram(self, name: str, message: str, config: dict):
@@ -241,4 +241,4 @@ class HeartbeatManager:
         except ImportError:
             pass
         except Exception as e:
-            logger.debug("Notifica Telegram fallita: %s", e)
+            logger.debug("Telegram notification failed: %s", e)

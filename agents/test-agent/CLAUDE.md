@@ -2,10 +2,10 @@
 
 ## Task
 
-Dimmi la notizia più importante di oggi. Solo due righe. e scrivila in output.txt nella tua cartella
+Tell me the most important news of today. Just two lines. Write it in output.txt in your folder.
 
 ## Heartbeat Behavior
 
-Controlla se il file output.txt esiste nella tua cartella. Se esiste, aggiungi una riga con la data/ora corrente e scrivi "heartbeat ok". Se non esiste, non fare nulla.
+Check if the file output.txt exists in your folder. If it exists, add a line with the current date/time and write "heartbeat ok". If it doesn't exist, do nothing.
 
-## Skills Attive
+## Active Skills

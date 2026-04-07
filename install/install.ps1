@@ -1,9 +1,9 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    MyCow Installer per Windows
+    MyCow Installer for Windows
 .DESCRIPTION
-    Installa MyCow in $HOME\MyCow, configura il venv Python e registra il comando globale 'mycow'.
+    Installs MyCow in $HOME\MyCow, configures Python venv and registers the global 'mycow' command.
 .EXAMPLE
     irm https://mycow.dev/install.ps1 | iex
 #>
@@ -20,11 +20,11 @@ $MIN_PYTHON     = [Version]"3.11"
 function Write-Step($msg) { Write-Host "`n>> $msg" -ForegroundColor Cyan }
 function Write-Ok($msg)   { Write-Host "   OK  $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "   !   $msg" -ForegroundColor Yellow }
-function Write-Fail($msg) { Write-Host "`n[ERRORE] $msg" -ForegroundColor Red; exit 1 }
+function Write-Fail($msg) { Write-Host "`n[ERROR] $msg" -ForegroundColor Red; exit 1 }
 
-# --- 1. Verifica Python -------------------------------------------------
+# --- 1. Check Python -------------------------------------------------
 
-Write-Step "Verifica Python 3.11+"
+Write-Step "Check Python 3.11+"
 
 $pythonCmd = $null
 foreach ($cmd in @("python", "python3", "py")) {
@@ -34,27 +34,27 @@ foreach ($cmd in @("python", "python3", "py")) {
             $found = [Version]$Matches[1]
             if ($found -ge $MIN_PYTHON) {
                 $pythonCmd = $cmd
-                Write-Ok "Trovato: $ver"
+                Write-Ok "Found: $ver"
                 break
             }
         }
     } catch {}
 }
 if (-not $pythonCmd) {
-    Write-Fail "Python 3.11+ non trovato. Scarica da https://python.org/downloads/"
+    Write-Fail "Python 3.11+ not found. Download from https://python.org/downloads/"
 }
 
-# --- 2. Verifica Claude Code CLI ----------------------------------------
+# --- 2. Check Claude Code CLI ----------------------------------------
 
-Write-Step "Verifica Claude Code CLI"
+Write-Step "Check Claude Code CLI"
 
 try {
     $claudeVer = & claude --version 2>&1
-    Write-Ok "Trovato: $claudeVer"
+    Write-Ok "Found: $claudeVer"
 } catch {
-    Write-Warn "Claude Code CLI non trovato nel PATH."
-    Write-Warn "Installa con: npm install -g @anthropic-ai/claude-code"
-    Write-Warn "MyCow verra' installato ma non funzionera' senza Claude Code."
+    Write-Warn "Claude Code CLI not found in PATH."
+    Write-Warn "Install with: npm install -g @anthropic-ai/claude-code"
+    Write-Warn "MyCow will be installed but won't work without Claude Code."
 }
 
 # --- 3. Download MyCow --------------------------------------------------
@@ -62,51 +62,51 @@ try {
 Write-Step "Download MyCow"
 
 if (Test-Path $INSTALL_DIR) {
-    Write-Warn "Cartella $INSTALL_DIR gia' esistente. Aggiorno solo le dipendenze."
+    Write-Warn "Folder $INSTALL_DIR already exists. Updating dependencies only."
 } else {
     $zipPath = Join-Path $env:TEMP "mycow.zip"
     $extractPath = Join-Path $env:TEMP "mycow_extract"
 
-    Write-Host "   Scarico da $MYCOW_REPO_URL ..."
+    Write-Host "   Downloading from $MYCOW_REPO_URL ..."
     Invoke-WebRequest -Uri $MYCOW_REPO_URL -OutFile $zipPath -UseBasicParsing
 
     if (Test-Path $extractPath) { Remove-Item $extractPath -Recurse -Force }
     Expand-Archive -Path $zipPath -DestinationPath $extractPath
 
-    # La zip di GitHub estrae in una sottocartella (es. mycow-main)
+    # GitHub zip extracts into a subfolder (e.g. mycow-main)
     $innerDir = Get-ChildItem $extractPath | Where-Object { $_.PSIsContainer } | Select-Object -First 1
     Move-Item $innerDir.FullName $INSTALL_DIR
 
     Remove-Item $zipPath -Force
     Remove-Item $extractPath -Recurse -Force
-    Write-Ok "Estratto in $INSTALL_DIR"
+    Write-Ok "Extracted to $INSTALL_DIR"
 }
 
-# --- 4. Crea venv -------------------------------------------------------
+# --- 4. Create venv -------------------------------------------------------
 
-Write-Step "Creazione ambiente virtuale Python"
+Write-Step "Creating Python virtual environment"
 
 if (-not (Test-Path $VENV_DIR)) {
     & $pythonCmd -m venv $VENV_DIR
-    Write-Ok "Venv creato in $VENV_DIR"
+    Write-Ok "venv created in $VENV_DIR"
 } else {
-    Write-Ok "Venv gia' esistente"
+    Write-Ok "venv already exists"
 }
 
-# --- 5. Installa dipendenze ---------------------------------------------
+# --- 5. Install dependencies ---------------------------------------------
 
-Write-Step "Installazione dipendenze Python"
+Write-Step "Installing Python dependencies"
 
 $pip = Join-Path $VENV_DIR "Scripts\pip.exe"
 $reqFile = Join-Path $INSTALL_DIR "requirements.txt"
-if (-not (Test-Path $reqFile)) { Write-Fail "requirements.txt non trovato in $INSTALL_DIR. L'installazione e' corrotta — rimuovi $INSTALL_DIR e riprova." }
+if (-not (Test-Path $reqFile)) { Write-Fail "requirements.txt not found in $INSTALL_DIR. Broken install — remove $INSTALL_DIR and try again." }
 & $pip install --upgrade pip --quiet
 & $pip install -r $reqFile --quiet
-Write-Ok "Dipendenze installate"
+Write-Ok "Dependencies installed"
 
-# --- 6. Configura .env --------------------------------------------------
+# --- 6. Configure .env --------------------------------------------------
 
-Write-Step "Configurazione .env"
+Write-Step "Configuring .env"
 
 $envFile    = Join-Path $INSTALL_DIR ".env"
 $envExample = Join-Path $INSTALL_DIR ".env.example"
@@ -114,7 +114,7 @@ $envExample = Join-Path $INSTALL_DIR ".env.example"
 if (-not (Test-Path $envFile)) {
     if (Test-Path $envExample) {
         Copy-Item $envExample $envFile
-        Write-Ok ".env creato da .env.example"
+        Write-Ok ".env created from .env.example"
     } else {
         @"
 TELEGRAM_BOT_TOKEN=
@@ -123,27 +123,27 @@ BRAVE_API_KEY=
 MYCOW_PORT=3333
 MYCOW_LOG_LEVEL=INFO
 "@ | Set-Content $envFile -Encoding UTF8
-        Write-Ok ".env creato con valori di default"
+        Write-Ok ".env created with default values"
     }
 } else {
-    Write-Ok ".env gia' esistente (non sovrascritto)"
+    Write-Ok ".env already exists (not overwritten)"
 }
 
-# --- 7. Rimuovi skill dev -----------------------------------------------
+# --- 7. Remove dev skills -----------------------------------------------
 
-Write-Step "Rimozione skill di sviluppo interno"
+Write-Step "Removing internal development skills"
 
 foreach ($devSkill in @("ux-premium", "security-first")) {
     $skillPath = Join-Path $INSTALL_DIR "skills\global\$devSkill"
     if (Test-Path $skillPath) {
         Remove-Item $skillPath -Recurse -Force
-        Write-Ok "Rimossa: $devSkill"
+        Write-Ok "Removed: $devSkill"
     }
 }
 
-# --- 8. Crea mycow.bat --------------------------------------------------
+# --- 8. Create mycow.bat --------------------------------------------------
 
-Write-Step "Creazione comando 'mycow'"
+Write-Step "Creating 'mycow' command"
 
 $batPath = Join-Path $INSTALL_DIR "mycow.bat"
 @"
@@ -151,32 +151,32 @@ $batPath = Join-Path $INSTALL_DIR "mycow.bat"
 call "%~dp0venv\Scripts\activate.bat"
 python "%~dp0daemon\main.py" %*
 "@ | Set-Content $batPath -Encoding ASCII
-Write-Ok "Creato: $batPath"
+Write-Ok "Created: $batPath"
 
-# --- 9. Aggiunge al PATH ------------------------------------------------
+# --- 9. Add to PATH ------------------------------------------------
 
-Write-Step "Registrazione nel PATH utente"
+Write-Step "Registering in user PATH"
 
 $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
 if ($userPath -notlike "*$INSTALL_DIR*") {
     [Environment]::SetEnvironmentVariable("PATH", "$INSTALL_DIR;$userPath", "User")
-    Write-Ok "Aggiunto al PATH utente"
-    Write-Warn "Riapri il terminale per usare 'mycow' da qualsiasi directory"
+    Write-Ok "Added to user PATH"
+    Write-Warn "Reopen terminal to use 'mycow' from any directory"
 } else {
-    Write-Ok "Gia' nel PATH"
+    Write-Ok "Already in PATH"
 }
 
 # --- Fine ---------------------------------------------------------------
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Green
-Write-Host "  MyCow installato con successo!" -ForegroundColor Green
+Write-Host "  MyCow installed successfully!" -ForegroundColor Green
 Write-Host "==========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Avvia il daemon:    mycow start"
-Write-Host "  Ferma il daemon:    mycow stop"
-Write-Host "  Stato:              mycow status"
+Write-Host "  Start daemon:       mycow start"
+Write-Host "  Stop daemon:        mycow stop"
+Write-Host "  Status:             mycow status"
 Write-Host ""
-Write-Host "  Configura i tuoi secrets in: $envFile"
-Write-Host "  Oppure aprendo la Web UI:    http://127.0.0.1:3333 → Settings"
+Write-Host "  Configure your secrets in: $envFile"
+Write-Host "  Or open Web UI:             http://127.0.0.1:3333 → Settings"
 Write-Host ""

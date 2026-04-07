@@ -1,71 +1,71 @@
 # Skill: UX Premium
 
-## Obiettivo
-MyCow non deve sembrare una webapp AI generata in 5 minuti. Deve sembrare una piattaforma professionale che ispira fiducia. Ogni schermata che costruisci deve passare questo test: *"Pagherei per usare questo?"*
+## Goal
+MyCow must not look like an AI webapp generated in 5 minutes. It must look like a professional platform that inspires trust. Every screen you build must pass this test: *"Would I pay to use this?"*
 
 ---
 
-## Principi Fondamentali
+## Core Principles
 
-### 1. Meno è più potente
-Ogni elemento sulla schermata deve guadagnarsi il suo spazio. Se un elemento non serve all'utente in quel momento, non c'è. Niente widget decorativi, niente statistiche inutili, niente "coming soon" visibili.
+### 1. Less is more powerful
+Every element on the screen must earn its space. If an element is not useful to the user at that moment, it's not there. No decorative widgets, no useless statistics, no visible "coming soon" states.
 
-### 2. Lo stato è sempre chiaro
-L'utente deve sapere sempre: cosa sta succedendo, cosa è andato bene, cosa ha bisogno di attenzione. Usa colori, icone e testi precisi. Mai ambiguità sullo stato di un agente.
+### 2. State is always clear
+The user must always know: what is happening, what went well, what needs attention. Use precise colors, icons, and text. Never any ambiguity about an agent's state.
 
-### 3. Le azioni importanti sono ovvie
-Il pulsante primario di ogni schermata è immediatamente riconoscibile. Non ci sono più di 2 azioni primarie per schermata.
+### 3. Important actions are obvious
+The primary button on every screen is immediately recognizable. There are no more than 2 primary actions per screen.
 
-### 4. Il feedback è immediato
-Ogni azione dell'utente riceve risposta visiva entro 100ms. Loading states sempre. Mai UI che sembra bloccata.
+### 4. Feedback is immediate
+Every user action receives a visual response within 100ms. Loading states always. Never a UI that looks stuck.
 
 ---
 
 ## Design System
 
-### Palette Colori
+### Color Palette
 ```css
 /* Brand */
---color-primary: #2D6A4F;        /* verde scuro — azioni primarie */
---color-primary-light: #52B788;  /* verde medio — hover, accenti */
---color-primary-pale: #D8F3DC;   /* verde pallido — background highlight */
+--color-primary: #2D6A4F;        /* dark green — primary actions */
+--color-primary-light: #52B788;  /* medium green — hover, accents */
+--color-primary-pale: #D8F3DC;   /* pale green — background highlight */
 
-/* Neutrali */
---color-bg: #0F1117;             /* background principale — scuro */
---color-surface: #1A1D27;        /* card, pannelli */
---color-surface-2: #22263A;      /* surface elevato */
---color-border: #2A2D3E;         /* bordi sottili */
+/* Neutrals */
+--color-bg: #0F1117;             /* main background — dark */
+--color-surface: #1A1D27;        /* cards, panels */
+--color-surface-2: #22263A;      /* elevated surface */
+--color-border: #2A2D3E;         /* subtle borders */
 
-/* Testo */
---color-text-primary: #F0F0F0;   /* testo principale */
---color-text-secondary: #8892A4; /* testo secondario, label */
---color-text-muted: #4A5568;     /* testo disabilitato, placeholder */
+/* Text */
+--color-text-primary: #F0F0F0;   /* main text */
+--color-text-secondary: #8892A4; /* secondary text, labels */
+--color-text-muted: #4A5568;     /* disabled text, placeholders */
 
-/* Stato */
---color-success: #52B788;        /* agente attivo, ok */
---color-warning: #F6AD55;        /* attenzione, in esecuzione */
---color-error: #FC8181;          /* errore, fermato */
---color-info: #63B3ED;           /* informazione neutra */
+/* State */
+--color-success: #52B788;        /* active agent, ok */
+--color-warning: #F6AD55;        /* attention, running */
+--color-error: #FC8181;          /* error, stopped */
+--color-info: #63B3ED;           /* neutral information */
 ```
 
-### Tipografia
+### Typography
 ```css
-/* Font stack — system fonts, zero dipendenze esterne */
+/* Font stack — system fonts, zero external dependencies */
 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-font-family-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; /* per log/codice */
+font-family-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; /* for logs/code */
 
 /* Scale */
---text-xs: 11px;    /* label, badge, timestamp */
---text-sm: 13px;    /* testo secondario */
---text-base: 14px;  /* testo principale */
---text-md: 16px;    /* titoli card */
---text-lg: 20px;    /* titoli sezione */
---text-xl: 28px;    /* titoli pagina */
+--text-xs: 11px;    /* labels, badges, timestamps */
+--text-sm: 13px;    /* secondary text */
+--text-base: 14px;  /* main text */
+--text-md: 16px;    /* card titles */
+--text-lg: 20px;    /* section titles */
+--text-xl: 28px;    /* page titles */
 ```
 
 ### Spacing
 ```css
-/* Usa multipli di 4px */
+/* Use multiples of 4px */
 --space-1: 4px;
 --space-2: 8px;
 --space-3: 12px;
@@ -77,31 +77,31 @@ font-family-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; /* per lo
 
 ### Border Radius
 ```css
---radius-sm: 6px;   /* badge, tag */
---radius-md: 10px;  /* card, input */
---radius-lg: 16px;  /* modal, pannelli grandi */
+--radius-sm: 6px;   /* badges, tags */
+--radius-md: 10px;  /* cards, inputs */
+--radius-lg: 16px;  /* modals, large panels */
 ```
 
 ---
 
-## Componenti Standard
+## Standard Components
 
-### Card Agente
+### Agent Card
 ```
 ┌─────────────────────────────────────┐
-│ 🐄 Nome Agente          ● Attivo    │
-│ Ultima esecuzione: 2 min fa         │
-│ Prossima: 08:00                     │
+│ 🐄 Agent Name           ● Active    │
+│ Last run: 2 min ago                 │
+│ Next: 08:00                         │
 │                          [▶ Run]    │
 └─────────────────────────────────────┘
 ```
-- Border left colorato per stato (verde/giallo/rosso)
-- Timestamp in formato relativo ("2 min fa", non "14:32:17")
-- Una sola azione primaria visibile
+- Colored left border for state (green/yellow/red)
+- Relative-format timestamp ("2 min ago", not "14:32:17")
+- Only one visible primary action
 
-### Badge Stato
+### State Badge
 ```css
-/* Sempre testo + colore, mai solo colore */
+/* Always text + color, never color alone */
 .badge-active   { background: #1B4D3E; color: #52B788; }
 .badge-running  { background: #4A3000; color: #F6AD55; }
 .badge-error    { background: #4A1010; color: #FC8181; }
@@ -109,51 +109,51 @@ font-family-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; /* per lo
 ```
 
 ### Log Viewer
-- Font monospace sempre
-- Timestamp a sinistra, testo a destra
-- Colori per livello: info (default), warning (giallo), error (rosso)
-- Auto-scroll all'ultimo log, con possibilità di bloccare lo scroll
-- Niente wall of text — raggruppa per run con separatore visivo
+- Always monospace font
+- Timestamp on the left, text on the right
+- Colors by level: info (default), warning (yellow), error (red)
+- Auto-scroll to the latest log, with option to lock scroll
+- No wall of text — group by run with a visual separator
 
-### Input e Form
-- Label sempre sopra l'input, mai placeholder come unica label
-- Validation inline, non submit e poi errore
-- Helper text sotto per contesto aggiuntivo
-- Focus state sempre visibile (outline 2px primary)
-
----
-
-## Pattern da Evitare
-
-❌ **Gradients aggressivi** — sembrono landing page economiche  
-❌ **Troppe animazioni** — distraggono, rallentano la percezione  
-❌ **Icone senza label** — l'utente non deve indovinare  
-❌ **Tabelle per tutto** — usa card quando i dati sono pochi  
-❌ **Modal su modal** — massimo un livello di overlay  
-❌ **Empty state vuoti** — sempre un messaggio utile + azione suggerita  
-❌ **Testo centrato in blocchi lunghi** — solo per titoli  
-❌ **Colori AI cliché** — viola, neon, gradients blu-viola  
+### Inputs and Forms
+- Label always above the input, never placeholder as the only label
+- Inline validation, not submit-then-error
+- Helper text below for additional context
+- Focus state always visible (outline 2px primary)
 
 ---
 
-## Pattern da Usare
+## Patterns to Avoid
 
-✅ **Dark theme** — professionale, riduce affaticamento, sembra premium  
-✅ **Microinterazioni sottili** — hover state, transizioni 150ms  
-✅ **Whitespace generoso** — il contenuto respira  
-✅ **Gerarchia visiva chiara** — l'occhio sa dove andare  
-✅ **Monospace per dati tecnici** — log, ID, path, comandi  
-✅ **Empty state utili** — "Nessun agente. Crea il tuo primo agente →"  
-✅ **Conferma per azioni distruttive** — elimina, stop, reset  
+❌ **Aggressive gradients** — they look like cheap landing pages  
+❌ **Too many animations** — distracting, slow perceived performance  
+❌ **Icons without labels** — the user should not have to guess  
+❌ **Tables for everything** — use cards when data is sparse  
+❌ **Modal on modal** — maximum one overlay level  
+❌ **Empty empty states** — always a useful message + suggested action  
+❌ **Centered text in long blocks** — only for titles  
+❌ **AI cliche colors** — purple, neon, blue-violet gradients  
 
 ---
 
-## Checklist Prima di Consegnare una Schermata
+## Patterns to Use
 
-- [ ] Funziona su viewport 1280px e 1920px?
-- [ ] Gli stati vuoti hanno un messaggio utile?
-- [ ] I loading states sono implementati?
-- [ ] Le azioni distruttive hanno conferma?
-- [ ] Il contrasto testo/background è sufficiente (WCAG AA)?
-- [ ] Nessun elemento decorativo senza funzione?
-- [ ] L'azione primaria è immediatamente riconoscibile?
+✅ **Dark theme** — professional, reduces eye strain, feels premium  
+✅ **Subtle microinteractions** — hover states, 150ms transitions  
+✅ **Generous whitespace** — content has room to breathe  
+✅ **Clear visual hierarchy** — the eye knows where to go  
+✅ **Monospace for technical data** — logs, IDs, paths, commands  
+✅ **Useful empty states** — "No agents. Create your first agent →"  
+✅ **Confirmation for destructive actions** — delete, stop, reset  
+
+---
+
+## Checklist Before Delivering a Screen
+
+- [ ] Does it work on 1280px and 1920px viewports?
+- [ ] Do empty states have a useful message?
+- [ ] Are loading states implemented?
+- [ ] Do destructive actions require confirmation?
+- [ ] Is the text/background contrast sufficient (WCAG AA)?
+- [ ] No decorative elements without function?
+- [ ] Is the primary action immediately recognizable?

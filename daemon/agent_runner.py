@@ -1,7 +1,7 @@
 """
 MyCow Agent Runner
-Wrappa Claude Code CLI in subprocess non-interattivo.
-Ogni esecuzione è loggata come JSON in agents/{name}/logs/.
+Wraps Claude Code CLI in a non-interactive subprocess.
+Every execution is logged as JSON in agents/{name}/logs/.
 """
 
 import json
@@ -18,7 +18,7 @@ logger = logging.getLogger("mycow.agent_runner")
 ROOT_DIR = Path(__file__).parent.parent
 AGENTS_DIR = ROOT_DIR / "agents"
 
-# Mapping livelli permesso → --allowedTools
+# Permission level mapping → --allowedTools
 PERMISSION_LEVELS = {
     0: "Read",
     1: "Read,Write",
@@ -29,8 +29,8 @@ PERMISSION_LEVELS = {
 
 def _resolve_allowed_tools(cron_config: dict) -> str:
     """
-    Ricava la stringa --allowedTools dai permessi in cron.yaml.
-    Usa PERMISSION_LEVELS come base, poi aggiunge skill-specific tools.
+    Builds the --allowedTools string from permissions in cron.yaml.
+    Uses PERMISSION_LEVELS as base, then adds skill-specific tools.
     """
     permissions = cron_config.get("permissions", {})
 
@@ -44,7 +44,7 @@ def _resolve_allowed_tools(cron_config: dict) -> str:
 
     tools = PERMISSION_LEVELS[level]
 
-    # WebSearch/WebFetch solo se internet è abilitato
+    # WebSearch/WebFetch only if internet is enabled
     if internet_allowed:
         tools += ",WebSearch,WebFetch"
 
@@ -65,7 +65,7 @@ def _save_log(agent_name: str, log_entry: dict) -> None:
 
 
 def get_logs(agent_name: str, limit: int = 100) -> list[dict]:
-    """Legge i log più recenti di un agente."""
+    """Reads the most recent logs for an agent."""
     log_dir = AGENTS_DIR / agent_name / "logs"
     if not log_dir.exists():
         return []
@@ -103,27 +103,27 @@ def run_agent(
     resume_session: str | None = None,
 ) -> dict:
     """
-    Esegue un agente via Claude Code CLI.
+    Runs an agent via Claude Code CLI.
 
     Args:
-        agent_name:  Nome cartella agente in agents/
-        prompt:      Prompt da passare a Claude Code
+        agent_name:  Agent folder name in agents/
+        prompt:      Prompt to pass to Claude Code
         trigger:     "cron" | "heartbeat" | "manual"
-        cron_config: Contenuto del cron.yaml dell'agente (per i permessi)
-        timeout:     Timeout subprocess in secondi (default 300)
+        cron_config: Content of the agent's cron.yaml (for permissions)
+        timeout:     Subprocess timeout in seconds (default 300)
 
     Returns:
-        dict con status, output, duration_seconds, error
+        dict with status, output, duration_seconds, error
     """
     agent_dir = AGENTS_DIR / agent_name
     if not agent_dir.exists():
-        logger.error("Cartella agente non trovata: %s", agent_dir)
+        logger.error("Agent folder not found: %s", agent_dir)
         return {"status": "error", "error": f"Agent dir not found: {agent_dir}"}
 
     emergency_stop = ROOT_DIR / "EMERGENCY_STOP"
     if emergency_stop.exists():
-        logger.warning("[%s] EMERGENCY_STOP attivo — esecuzione bloccata", agent_name)
-        return {"status": "blocked", "error": "EMERGENCY_STOP attivo. Rimuovi il file per riabilitare."}
+        logger.warning("[%s] EMERGENCY_STOP active — execution blocked", agent_name)
+        return {"status": "blocked", "error": "EMERGENCY_STOP active. Remove the file to re-enable."}
 
     cron_config = cron_config or {}
     allowed_tools = _resolve_allowed_tools(cron_config)
@@ -142,15 +142,15 @@ def run_agent(
         cmd += ["--continue"]
     cmd += [
         "--append-system-prompt",
-        "Per creare o modificare file usa SEMPRE il tool Write, mai Bash. "
-        "Per leggere file usa Read, mai Bash. "
-        "Usa Bash solo per operazioni che non puoi fare con Read/Write. "
-        "NON cercare token, credenziali o file .env — non sono nel tuo ambiente e non puoi accedervi. "
-        "NON tentare di inviare messaggi Telegram direttamente: il daemon li invia per te automaticamente. "
-        "Per comunicare qualcosa via Telegram scrivi semplicemente il testo in output — il daemon lo recapita.",
+        "To create or modify files ALWAYS use the Write tool, never Bash. "
+        "To read files use Read, never Bash. "
+        "Use Bash only for operations you cannot do with Read/Write. "
+        "DO NOT look for tokens, credentials, or .env files — they are not in your environment and you cannot access them. "
+        "DO NOT attempt to send Telegram messages directly: the daemon sends them for you automatically. "
+        "To communicate something via Telegram simply write the text as output — the daemon delivers it.",
     ]
 
-    logger.info("[%s] Avvio — trigger=%s tools=%s", agent_name, trigger, allowed_tools)
+    logger.info("[%s] Starting — trigger=%s tools=%s", agent_name, trigger, allowed_tools)
     start_time = time.monotonic()
     timestamp = datetime.now(timezone.utc).isoformat()
 
@@ -168,7 +168,7 @@ def run_agent(
         "error": None,
     }
 
-    # Rimuovi secrets dall'ambiente del subprocess — l'agente non deve averli
+    # Remove secrets from subprocess environment — the agent must not have them
     clean_env = {k: v for k, v in os.environ.items()
                  if k not in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID")}
 
@@ -194,25 +194,25 @@ def run_agent(
             stderr = proc.stderr.strip()
             stdout = proc.stdout.strip()[:500]
             error_msg = stderr or stdout or f"Exit code {proc.returncode}"
-            logger.error("[%s] Errore Claude Code (rc=%d) stderr=%r stdout=%r",
+            logger.error("[%s] Claude Code error (rc=%d) stderr=%r stdout=%r",
                          agent_name, proc.returncode, stderr[:200] if stderr else "", stdout[:200] if stdout else "")
             result["status"] = "error"
             result["error"] = error_msg
             _save_log(agent_name, result)
-            _notify_telegram(agent_name, f"Errore esecuzione: {error_msg}", cron_config)
+            _notify_telegram(agent_name, f"Execution error: {error_msg}", cron_config)
             return result
 
-        # Parsing output JSON di Claude Code
+        # Parse Claude Code JSON output
         output_text, session_id, parsed_ok = _parse_claude_output(proc.stdout, agent_name)
 
-        # Retry CLI se output malformato e stdout era non vuoto
+        # Retry CLI if output is malformed and stdout was not empty
         if not parsed_ok and proc.stdout.strip():
-            logger.warning("[%s] Output malformato, retry CLI...", agent_name)
+            logger.warning("[%s] Malformed output, retrying CLI...", agent_name)
             try:
                 proc = _run_cmd(cmd)
                 output_text, session_id, parsed_ok = _parse_claude_output(proc.stdout, agent_name)
             except Exception as retry_err:
-                logger.warning("[%s] Retry fallito: %s", agent_name, retry_err)
+                logger.warning("[%s] Retry failed: %s", agent_name, retry_err)
 
         result["status"] = "success"
         result["output"] = output_text
@@ -220,7 +220,7 @@ def run_agent(
             result["session_id"] = session_id
         logger.info("[%s] Completato in %.1fs", agent_name, duration)
 
-        # Auto-notifica Telegram solo per cron/heartbeat — chat e manual gestiscono da soli la risposta
+        # Auto-notify Telegram only for cron/heartbeat — chat and manual handle their own responses
         if (cron_config.get("permissions", {}).get("telegram_without_approval")
                 and output_text
                 and trigger not in ("chat", "manual")):
@@ -231,19 +231,19 @@ def run_agent(
         duration = round(time.monotonic() - start_time, 2)
         result["duration_seconds"] = duration
         result["status"] = "timeout"
-        result["error"] = f"Timeout dopo {timeout}s"
-        logger.warning("[%s] Timeout dopo %ds", agent_name, timeout)
-        _notify_telegram(agent_name, f"Timeout dopo {timeout}s", cron_config)
+        result["error"] = f"Timeout after {timeout}s"
+        logger.warning("[%s] Timeout after %ds", agent_name, timeout)
+        _notify_telegram(agent_name, f"Timeout after {timeout}s", cron_config)
 
     except FileNotFoundError:
         result["status"] = "error"
-        result["error"] = "Claude Code CLI non trovato. Installa: npm install -g @anthropic-ai/claude-code"
-        logger.error("[%s] claude CLI non trovato nel PATH", agent_name)
+        result["error"] = "Claude Code CLI not found. Install: npm install -g @anthropic-ai/claude-code"
+        logger.error("[%s] claude CLI not found in PATH", agent_name)
 
     except Exception as e:
         result["status"] = "error"
         result["error"] = str(e)
-        logger.exception("[%s] Errore inatteso: %s", agent_name, e)
+        logger.exception("[%s] Unexpected error: %s", agent_name, e)
 
     _save_log(agent_name, result)
     return result
@@ -251,16 +251,16 @@ def run_agent(
 
 def _parse_claude_output(raw_stdout: str, agent_name: str) -> tuple[str | None, str | None, bool]:
     """
-    Parsa l'output JSON di Claude Code (--output-format json).
-    Ritorna (testo_risposta, session_id, parsed_ok).
-    parsed_ok=False indica che l'output non era JSON valido (fallback a testo grezzo).
+    Parses the JSON output from Claude Code (--output-format json).
+    Returns (response_text, session_id, parsed_ok).
+    parsed_ok=False means the output was not valid JSON (fallback to raw text).
     """
     if not raw_stdout.strip():
         return None, None, False
 
-    # Claude Code con --output-format json emette una lista di messaggi
-    # L'ultimo con role="assistant" contiene la risposta finale.
-    # In alternativa emette un singolo dict {type:"result", subtype:"success", result:"..."}
+    # Claude Code with --output-format json emits a list of messages.
+    # The last one with role="assistant" contains the final response.
+    # Alternatively it emits a single dict {type:"result", subtype:"success", result:"..."}
     for attempt in range(2):
         try:
             data = json.loads(raw_stdout)
@@ -303,14 +303,14 @@ def _parse_claude_output(raw_stdout: str, agent_name: str) -> tuple[str | None, 
                     except json.JSONDecodeError:
                         continue
             else:
-                logger.warning("[%s] Output Claude Code non parsabile — restituisco testo grezzo", agent_name)
+                logger.warning("[%s] Claude Code output not parseable — returning raw text", agent_name)
                 return raw_stdout[:2000], None, False
 
     return raw_stdout[:2000], None, False
 
 
 def _notify_telegram(agent_name: str, message: str, cron_config: dict) -> None:
-    """Invia notifica Telegram tramite il daemon (l'agente non ha il token)."""
+    """Sends a Telegram notification via the daemon (the agent does not have the token)."""
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat_id = cron_config.get("telegram_chat_id") or os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chat_id:
@@ -327,4 +327,4 @@ def _notify_telegram(agent_name: str, message: str, cron_config: dict) -> None:
             )
         asyncio.run(_send())
     except Exception as e:
-        logger.debug("Notifica Telegram fallita: %s", e)
+        logger.debug("Telegram notification failed: %s", e)

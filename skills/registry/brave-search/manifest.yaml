@@ -1,6 +1,6 @@
 name: brave-search
 version: 1.0.0
-description: Cerca sul web via Brave Search API — privata, senza tracking
+description: Search the web via Brave Search API — private, no tracking
 requires_env:
   - BRAVE_API_KEY
 mcp_server: null

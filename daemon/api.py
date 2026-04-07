@@ -1,7 +1,7 @@
 """
-MyCow API REST locale
-Flask su 127.0.0.1:3333 — backend per la Web UI.
-MAI bindare su 0.0.0.0.
+MyCow Local REST API
+Flask on 127.0.0.1:3333 — backend for the Web UI.
+NEVER bind to 0.0.0.0.
 """
 
 import json
@@ -28,12 +28,12 @@ ENV_FILE = ROOT_DIR / ".env"
 _start_time = time.monotonic()
 
 
-# Campi .env che possono essere letti via API (no secrets)
+# .env fields readable via API (no secrets)
 READABLE_SETTINGS = {"MYCOW_PORT", "MYCOW_LOG_LEVEL"}
-# Campi .env che possono essere scritti via API — include secrets (write-only, mai letti)
+# .env fields writable via API — includes secrets (write-only, never returned)
 WRITABLE_SETTINGS = {"MYCOW_PORT", "MYCOW_LOG_LEVEL",
                      "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "BRAVE_API_KEY"}
-# Secrets: scrivibili ma non restituiti da GET /api/settings
+# Secrets: writable but not returned by GET /api/settings
 SECRET_SETTINGS = {"TELEGRAM_BOT_TOKEN", "BRAVE_API_KEY"}
 
 
@@ -46,7 +46,7 @@ def _ok(data: dict | list, code: int = 200):
 
 
 def _agent_state(name: str, scheduler=None, heartbeat_mgr=None) -> dict:
-    """Costruisce il dict di stato di un agente."""
+    """Builds the state dict for an agent."""
     agent_dir = AGENTS_DIR / name
     yaml_path = agent_dir / "cron.yaml"
     config = {}
@@ -56,7 +56,7 @@ def _agent_state(name: str, scheduler=None, heartbeat_mgr=None) -> dict:
         except Exception:
             pass
 
-    # Crons dal scheduler
+    # Crons from scheduler
     crons = []
     if scheduler:
         crons = [j for j in scheduler.list_jobs() if j.get("agent") == name]
@@ -69,12 +69,12 @@ def _agent_state(name: str, scheduler=None, heartbeat_mgr=None) -> dict:
                 hb_status = h
                 break
 
-    # Ultimi log
+    # Latest logs
     from daemon.agent_runner import get_logs
     logs = get_logs(name, limit=1)
     last_run = logs[0] if logs else None
 
-    # Skill attive
+    # Active skills
     skills = _agent_skills(name)
 
     return {
@@ -93,7 +93,7 @@ def _agent_skills(name: str) -> list[str]:
     if not claude_md.exists():
         return []
     content = claude_md.read_text(encoding="utf-8")
-    match = re.search(r"## Skills Attive\b(.*?)(?=\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
+    match = re.search(r"## (?:Skills Attive|Active Skills)\b(.*?)(?=\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
     if not match:
         return []
     lines = match.group(1).strip().splitlines()
@@ -166,18 +166,18 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
     @app.route("/api/agents/<name>")
     def agent_detail(name):
         if not (AGENTS_DIR / name).exists():
-            return _err(f"Agente '{name}' non trovato", 404)
+            return _err(f"Agent '{name}' not found", 404)
         return _ok(_agent_state(name, scheduler, heartbeat_mgr))
 
     @app.route("/api/agents/<name>/run", methods=["POST"])
     def agent_run(name):
         agent_dir = AGENTS_DIR / name
         if not agent_dir.exists():
-            return _err(f"Agente '{name}' non trovato", 404)
+            return _err(f"Agent '{name}' not found", 404)
         yaml_path = agent_dir / "cron.yaml"
         config = yaml.safe_load(yaml_path.read_text()) if yaml_path.exists() else {}
 
-        # Prompt custom dal body (chat) o primo cron (run manuale)
+        # Custom prompt from body (chat) or first cron (manual run)
         body = request.get_json(silent=True) or {}
         custom_prompt = (body.get("prompt") or "").strip()
 
@@ -188,11 +188,11 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
         else:
             crons = config.get("crons", [])
             if not crons:
-                return _err("Nessun cron configurato per questo agente")
+                return _err("No cron configured for this agent")
             entry = crons[0]
             prompt = entry.get("prompt", "").strip()
             if not prompt:
-                return _err("Nessun prompt nel primo cron")
+                return _err("No prompt in the first cron")
             model = entry.get("model") or config.get("model")
             trigger = "manual"
 
@@ -202,7 +202,7 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
             run_agent(name, prompt, trigger=trigger, cron_config=config, model=model,
                       resume_session=(trigger == "chat"))
         threading.Thread(target=_run, daemon=True).start()
-        return _ok({"message": f"Agente '{name}' avviato in background"})
+        return _ok({"message": f"Agent '{name}' started in background"})
 
     @app.route("/api/agents/<name>/pause", methods=["POST"])
     def agent_pause(name):
@@ -210,7 +210,7 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
             scheduler.pause_agent(name)
         if heartbeat_mgr:
             heartbeat_mgr.pause_agent(name)
-        return _ok({"message": f"'{name}' in pausa"})
+        return _ok({"message": f"'{name}' paused"})
 
     @app.route("/api/agents/<name>/resume", methods=["POST"])
     def agent_resume(name):
@@ -218,17 +218,17 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
             scheduler.resume_agent(name)
         if heartbeat_mgr:
             heartbeat_mgr.resume_agent(name)
-        return _ok({"message": f"'{name}' ripreso"})
+        return _ok({"message": f"'{name}' resumed"})
 
     @app.route("/api/agents/create", methods=["POST"])
     def agent_create():
         data = request.get_json(silent=True) or {}
         name = (data.get("name") or "").strip().lower()
         if not name or not re.match(r"^[a-z0-9][a-z0-9\-]{0,48}$", name):
-            return _err("Nome agente non valido (solo lowercase, numeri, trattini)")
+            return _err("Invalid agent name (lowercase, numbers, and hyphens only)")
         agent_dir = AGENTS_DIR / name
         if agent_dir.exists():
-            return _err(f"Agente '{name}' esiste gia'")
+            return _err(f"Agent '{name}' already exists")
 
         crons = data.get("crons", [])
         heartbeat = data.get("heartbeat", 0)
@@ -238,7 +238,7 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
             "write_outside_dir": False, "telegram_without_approval": False,
         })
 
-        # Crea struttura cartelle
+        # Create folder structure
         (agent_dir / "memory").mkdir(parents=True)
         (agent_dir / ".claude").mkdir()
 
@@ -270,7 +270,7 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
             hb_prompt = data.get("heartbeat_prompt", "")
             claude_lines.append(f"## Heartbeat Behavior\n{hb_prompt}\n")
         if data.get("skills"):
-            claude_lines.append("## Skills Attive")
+            claude_lines.append("## Active Skills")
             for s in data["skills"]:
                 claude_lines.append(f"- ../../../skills/global/{s}/skill.md")
         (agent_dir / "CLAUDE.md").write_text("\n".join(claude_lines), encoding="utf-8")
@@ -289,16 +289,16 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
             encoding="utf-8"
         )
 
-        # Registra subito nel scheduler se attivo
+        # Register immediately in the scheduler if active
         if scheduler:
             scheduler._register_agent(name)
 
-        return _ok({"message": f"Agente '{name}' creato", "name": name}, 201)
+        return _ok({"message": f"Agent '{name}' created", "name": name}, 201)
 
     @app.route("/api/agents/<name>/logs")
     def agent_logs(name):
         if not (AGENTS_DIR / name).exists():
-            return _err(f"Agente '{name}' non trovato", 404)
+            return _err(f"Agent '{name}' not found", 404)
         limit = min(int(request.args.get("limit", 100)), 500)
         from daemon.agent_runner import get_logs
         return _ok(get_logs(name, limit=limit))
@@ -306,7 +306,7 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
     @app.route("/api/agents/<name>/schedule")
     def agent_schedule(name):
         if not (AGENTS_DIR / name).exists():
-            return _err(f"Agente '{name}' non trovato", 404)
+            return _err(f"Agent '{name}' not found", 404)
         if not scheduler:
             return _ok({"crons": []})
         jobs = [j for j in scheduler.list_jobs() if j.get("agent") == name]
@@ -315,7 +315,7 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
     @app.route("/api/agents/<name>/heartbeat")
     def agent_heartbeat(name):
         if not (AGENTS_DIR / name).exists():
-            return _err(f"Agente '{name}' non trovato", 404)
+            return _err(f"Agent '{name}' not found", 404)
         if not heartbeat_mgr:
             return _ok({"status": "not_running"})
         for h in heartbeat_mgr.get_status():
@@ -364,51 +364,51 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
         data = request.get_json(silent=True) or {}
         name = data.get("name", "").strip()
         if not name:
-            return _err("Campo 'name' obbligatorio")
+            return _err("Field 'name' is required")
         src = SKILLS_REGISTRY / name
         dst = SKILLS_GLOBAL / name
         if not src.exists():
-            return _err(f"Skill '{name}' non trovata nel registry", 404)
+            return _err(f"Skill '{name}' not found in registry", 404)
         if dst.exists():
-            return _err(f"Skill '{name}' gia' installata")
+            return _err(f"Skill '{name}' already installed")
         import shutil
         shutil.copytree(str(src), str(dst))
-        return _ok({"message": f"Skill '{name}' installata"}, 201)
+        return _ok({"message": f"Skill '{name}' installed"}, 201)
 
     @app.route("/api/skills/<name>", methods=["DELETE"])
     def skill_uninstall(name):
         dst = SKILLS_GLOBAL / name
         if not dst.exists():
-            return _err(f"Skill '{name}' non trovata", 404)
+            return _err(f"Skill '{name}' not found", 404)
         import shutil
         shutil.rmtree(str(dst))
-        return _ok({"message": f"Skill '{name}' disinstallata"})
+        return _ok({"message": f"Skill '{name}' uninstalled"})
 
     @app.route("/api/agents/<agent>/skills/<skill>", methods=["POST"])
     def agent_skill_add(agent, skill):
         claude_md = AGENTS_DIR / agent / "CLAUDE.md"
         if not claude_md.exists():
-            return _err(f"Agente '{agent}' non trovato", 404)
+            return _err(f"Agent '{agent}' not found", 404)
         content = claude_md.read_text(encoding="utf-8")
         skill_ref = f"- ../../../skills/global/{skill}/skill.md"
         if skill_ref in content:
-            return _ok({"message": "Skill gia' attiva"})
-        if "## Skills Attive" not in content:
-            content += "\n## Skills Attive\n"
+            return _ok({"message": "Skill already active"})
+        if "## Active Skills" not in content:
+            content += "\n## Active Skills\n"
         content = content.rstrip() + f"\n{skill_ref}\n"
         claude_md.write_text(content, encoding="utf-8")
-        return _ok({"message": f"Skill '{skill}' aggiunta a '{agent}'"})
+        return _ok({"message": f"Skill '{skill}' added to '{agent}'"})
 
     @app.route("/api/agents/<agent>/skills/<skill>", methods=["DELETE"])
     def agent_skill_remove(agent, skill):
         claude_md = AGENTS_DIR / agent / "CLAUDE.md"
         if not claude_md.exists():
-            return _err(f"Agente '{agent}' non trovato", 404)
+            return _err(f"Agent '{agent}' not found", 404)
         content = claude_md.read_text(encoding="utf-8")
         skill_ref = f"- ../../../skills/global/{skill}/skill.md"
         content = content.replace(skill_ref + "\n", "").replace(skill_ref, "")
         claude_md.write_text(content, encoding="utf-8")
-        return _ok({"message": f"Skill '{skill}' rimossa da '{agent}'"})
+        return _ok({"message": f"Skill '{skill}' removed from '{agent}'"})
 
     # ------------------------------------------------------------------
     # Settings
@@ -419,10 +419,10 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
         result = {}
         for key in READABLE_SETTINGS:
             result[key] = os.environ.get(key, "")
-        # Per i secrets: solo booleano "configurato"
+        # For secrets: only return boolean "configured"
         for key in SECRET_SETTINGS:
             result[f"{key}__set"] = bool(os.environ.get(key, "").strip())
-        # TELEGRAM_CHAT_ID è readable (non è un secret)
+        # TELEGRAM_CHAT_ID is readable (not a secret)
         result["TELEGRAM_CHAT_ID"] = os.environ.get("TELEGRAM_CHAT_ID", "")
         result["TELEGRAM_CHAT_ID__set"] = bool(os.environ.get("TELEGRAM_CHAT_ID", "").strip())
         return _ok(result)
@@ -432,8 +432,8 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
         data = request.get_json(silent=True) or {}
         forbidden = [k for k in data if k not in WRITABLE_SETTINGS]
         if forbidden:
-            return _err(f"Campi non modificabili via API: {forbidden}")
-        # Leggi .env attuale
+            return _err(f"Fields not writable via API: {forbidden}")
+        # Read current .env
         env_lines = []
         if ENV_FILE.exists():
             env_lines = ENV_FILE.read_text(encoding="utf-8").splitlines()
@@ -447,10 +447,10 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
             if not found:
                 env_lines.append(f"{key}={value}")
         ENV_FILE.write_text("\n".join(env_lines) + "\n", encoding="utf-8")
-        # Aggiorna env in memoria
+        # Update env in memory
         for key, value in data.items():
             os.environ[key] = str(value)
-        return _ok({"message": "Impostazioni aggiornate"})
+        return _ok({"message": "Settings updated"})
 
     # ------------------------------------------------------------------
     # Stop All
@@ -474,6 +474,6 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
                 heartbeat_mgr.stop()
             except Exception:
                 pass
-        return _ok({"message": "EMERGENCY_STOP attivato. Tutti gli agenti fermati."})
+        return _ok({"message": "EMERGENCY_STOP activated. All agents stopped."})
 
     return app

@@ -1,129 +1,129 @@
 # Security
 
-MyCow è progettato con un modello di sicurezza esplicito: **ogni permesso è opt-in, tutto il resto è negato**.
+MyCow is designed with an explicit security model: **every permission is opt-in, everything else is denied**.
 
 ---
 
-## Principi non negoziabili
+## Non-negotiable principles
 
-1. **Permessi espliciti** — ogni agente dichiara esattamente cosa può fare in `cron.yaml`. Nessun permesso implicito.
-2. **Mai `--dangerously-skip-permissions`** — MyCow usa sempre `--allowedTools` con least privilege. Non c'è modo di aggirarlo via configurazione.
-3. **Timeout su tutto** — ogni subprocess Claude Code ha un timeout esplicito (default 300s). Un agente bloccato non blocca il daemon.
-4. **Secrets mai in chiaro** — token e API key vivono in `.env`, mai in `CLAUDE.md` o `cron.yaml`. Il subprocess dell'agente non riceve `TELEGRAM_BOT_TOKEN`.
-5. **API solo su localhost** — il daemon Flask ascolta su `127.0.0.1:3333`, mai su `0.0.0.0`.
-6. **Kill switch globale** — `/stop` su Telegram ferma immediatamente tutti gli agenti.
+1. **Explicit permissions** — each agent declares exactly what it can do in `cron.yaml`. No implicit permissions.
+2. **Never `--dangerously-skip-permissions`** — MyCow always uses `--allowedTools` with least privilege. There is no way to bypass this via configuration.
+3. **Timeout on everything** — every Claude Code subprocess has an explicit timeout (default 300s). A stuck agent does not block the daemon.
+4. **Secrets never in plaintext** — tokens and API keys live in `.env`, never in `CLAUDE.md` or `cron.yaml`. The agent subprocess does not receive `TELEGRAM_BOT_TOKEN`.
+5. **API only on localhost** — the Flask daemon listens on `127.0.0.1:3333`, never on `0.0.0.0`.
+6. **Global kill switch** — `/stop` on Telegram immediately stops all agents.
 
 ---
 
-## Modello di permessi
+## Permission model
 
-I permessi si configurano in `cron.yaml` per ogni agente:
+Permissions are configured in `cron.yaml` for each agent:
 
 ```yaml
 permissions:
-  bash: false                    # esecuzione comandi shell
-  internet: true                 # WebSearch e WebFetch
-  write_outside_dir: false       # scrittura fuori da agents/nome/
-  telegram_without_approval: true  # invio Telegram senza conferma
+  bash: false                    # shell command execution
+  internet: true                 # WebSearch and WebFetch
+  write_outside_dir: false       # write outside agents/name/
+  telegram_without_approval: true  # send Telegram without confirmation
 ```
 
-**Livelli risultanti per `--allowedTools`:**
+**Resulting levels for `--allowedTools`:**
 
-| Configurazione | Tools permessi |
+| Configuration | Allowed tools |
 |----------------|----------------|
 | `bash: false` | `Read, Write` |
 | `bash: false` + `internet: true` | `Read, Write, WebSearch, WebFetch` |
 | `bash: true` | `Read, Write, Bash(git *), Bash(npm test), Bash(python *)` |
 
-Gli agenti non ricevono mai `Bash(*)` illimitato — i comandi bash permessi sono una lista fissa.
+Agents never receive unlimited `Bash(*)` — the allowed bash commands are a fixed list.
 
 ---
 
 ## EMERGENCY_STOP
 
-Il kill switch crea un file `EMERGENCY_STOP` nella root del progetto.
+The kill switch creates an `EMERGENCY_STOP` file in the project root.
 
-**Come si attiva:**
-- Comando Telegram: `/stop`
+**How to activate it:**
+- Telegram command: `/stop`
 - API: `POST /api/stop-all`
-- Manualmente: `touch EMERGENCY_STOP` nella root
+- Manually: `touch EMERGENCY_STOP` in the root
 
-**Effetto:**
-- Scheduler e HeartbeatManager si fermano immediatamente
-- Ogni chiamata a `run_agent()` viene bloccata con stato `"blocked"` prima di avviare qualsiasi subprocess
-- Il daemon rimane in esecuzione (API e web UI funzionano ancora)
+**Effect:**
+- Scheduler and HeartbeatManager stop immediately
+- Every call to `run_agent()` is blocked with state `"blocked"` before starting any subprocess
+- The daemon remains running (API and web UI still work)
 
-**Come rimuoverlo:**
+**How to remove it:**
 ```bash
 rm EMERGENCY_STOP   # Mac/Linux
 del EMERGENCY_STOP  # Windows
 ```
 
-Oppure via Web UI → Settings → "Riabilita agenti".
+Or via Web UI → Settings → "Re-enable agents".
 
 ---
 
 ## Secrets
 
-**Dove vanno:**
+**Where they go:**
 ```bash
-# .env (mai committato)
+# .env (never committed)
 TELEGRAM_BOT_TOKEN=...
 TELEGRAM_CHAT_ID=...
 BRAVE_API_KEY=...
 ANTHROPIC_API_KEY=...
 ```
 
-**Il file `.env` non viene mai letto dagli agenti.** Il daemon carica le variabili all'avvio e le rimuove dall'ambiente del subprocess prima di avviare Claude Code:
+**The `.env` file is never read by agents.** The daemon loads the variables at startup and removes them from the subprocess environment before starting Claude Code:
 
 ```python
 clean_env = {k: v for k, v in os.environ.items()
              if k not in ("TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID")}
 ```
 
-**Cosa non fare:**
-- Non mettere token in `CLAUDE.md` o `cron.yaml`
-- Non committare `.env` (è nel `.gitignore`)
-- Non usare secrets come parte del prompt
+**What not to do:**
+- Do not put tokens in `CLAUDE.md` or `cron.yaml`
+- Do not commit `.env` (it's in `.gitignore`)
+- Do not use secrets as part of the prompt
 
 ---
 
-## API locale
+## Local API
 
-L'API Flask è accessibile solo da localhost per design. Nessuna autenticazione necessaria perché non è esposta in rete.
+The Flask API is accessible only from localhost by design. No authentication is needed because it is not exposed to the network.
 
-Se hai bisogno di accesso remoto (es. da telefono via Telegram), **usa Telegram** — è già integrato e cifrato.
+If you need remote access (e.g. from your phone via Telegram), **use Telegram** — it is already integrated and encrypted.
 
-Per accesso remoto alla Web UI:
+For remote access to the Web UI:
 
-### Tailscale (raccomandato)
+### Tailscale (recommended)
 
-Tailscale crea una VPN zero-config tra i tuoi dispositivi senza aprire porte pubbliche.
+Tailscale creates a zero-config VPN between your devices without opening public ports.
 
 ```bash
-# Installa Tailscale
+# Install Tailscale
 # Mac:   brew install tailscale
 # Linux: curl -fsSL https://tailscale.com/install.sh | sh
 # Win:   https://tailscale.com/download/windows
 
-# Avvia
+# Start
 tailscale up
 
-# Accedi alla Web UI dal tuo telefono via IP Tailscale
-# Es: http://100.x.x.x:3333
+# Access the Web UI from your phone via Tailscale IP
+# E.g.: http://100.x.x.x:3333
 ```
 
 ---
 
 ## Input sanitization
 
-Il bridge Telegram sanitizza tutti i comandi in entrata:
-- Max 2000 caratteri per messaggio
-- Pattern bloccati: `--dangerously`, `rm -rf`, `format c:`, `del /f /s`
-- Whitelist chat_id: solo i chat ID configurati in `.env` possono inviare comandi
+The Telegram bridge sanitizes all incoming commands:
+- Max 2000 characters per message
+- Blocked patterns: `--dangerously`, `rm -rf`, `format c:`, `del /f /s`
+- chat_id whitelist: only the chat IDs configured in `.env` can send commands
 
 ---
 
-## Reporting vulnerabilità
+## Vulnerability reporting
 
-Se trovi una vulnerabilità di sicurezza, non aprire una issue pubblica. Contatta direttamente tramite i recapiti in [COMMERCIAL.md](../COMMERCIAL.md).
+If you find a security vulnerability, do not open a public issue. Contact directly using the details in [COMMERCIAL.md](../COMMERCIAL.md).

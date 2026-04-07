@@ -1,6 +1,6 @@
 """
 MyCow Daemon - Entrypoint
-Avvia e coordina: API REST, CronScheduler, HeartbeatManager, TelegramBridge.
+Starts and coordinates: API REST, CronScheduler, HeartbeatManager, TelegramBridge.
 """
 
 import argparse
@@ -11,21 +11,21 @@ import sys
 import time
 from pathlib import Path
 
-# Assicura che la root del progetto sia in sys.path quando main.py viene
-# eseguito direttamente (es. python daemon/main.py)
+# Ensures the project root is in sys.path when main.py is run
+# directly (e.g. python daemon/main.py)
 _ROOT = Path(__file__).parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-# Carica .env dalla root del progetto
+# Load .env from project root
 try:
     from dotenv import load_dotenv
     _env_path = Path(__file__).parent.parent / ".env"
-    load_dotenv(dotenv_path=_env_path)
+    load_dotenv(dotenv_path=_env_path, override=True)
 except ImportError:
-    print("[WARNING] python-dotenv non installato. Esegui: pip install -r requirements.txt")
+    print("[WARNING] python-dotenv not installed. Run: pip install -r requirements.txt")
 
-# --- Logging -----------------------------------------------------------
+# --- Logging ----------------------------------------------------------
 
 def setup_logging(level: str = "INFO") -> logging.Logger:
     log_level = getattr(logging, level.upper(), logging.INFO)
@@ -38,13 +38,13 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
 
 logger = setup_logging(os.environ.get("MYCOW_LOG_LEVEL", "INFO"))
 
-# --- Costanti ----------------------------------------------------------
+# --- Constants ---------------------------------------------------------
 
 ROOT_DIR = Path(__file__).parent.parent
 EMERGENCY_STOP_FILE = ROOT_DIR / "EMERGENCY_STOP"
 PORT = int(os.environ.get("MYCOW_PORT", 3333))
 
-# --- Import moduli figli (graceful) ------------------------------------
+# --- Child module imports (graceful) -----------------------------------
 
 _api = None
 _scheduler = None
@@ -57,32 +57,32 @@ def _load_modules():
     try:
         from daemon import api as _api_module
         _api = _api_module
-        logger.debug("Modulo api caricato.")
+        logger.debug("Module api loaded.")
     except ImportError:
-        logger.warning("Modulo api.py non ancora implementato - Web UI non disponibile.")
+        logger.warning("Module api.py not yet implemented - Web UI unavailable.")
 
     try:
         from daemon import scheduler as _sched_module
         _scheduler = _sched_module
-        logger.debug("Modulo scheduler caricato.")
+        logger.debug("Module scheduler loaded.")
     except ImportError:
-        logger.warning("Modulo scheduler.py non ancora implementato - Cron disabilitato.")
+        logger.warning("Module scheduler.py not yet implemented - Cron disabled.")
 
     try:
         from daemon import heartbeat as _hb_module
         _heartbeat = _hb_module
-        logger.debug("Modulo heartbeat caricato.")
+        logger.debug("Module heartbeat loaded.")
     except ImportError:
-        logger.warning("Modulo heartbeat.py non ancora implementato - Heartbeat disabilitato.")
+        logger.warning("Module heartbeat.py not yet implemented - Heartbeat disabled.")
 
     try:
         from daemon import telegram_bridge as _tg_module
         _telegram = _tg_module
-        logger.debug("Modulo telegram_bridge caricato.")
+        logger.debug("Module telegram_bridge loaded.")
     except ImportError:
-        logger.warning("Modulo telegram_bridge.py non ancora implementato - Telegram disabilitato.")
+        logger.warning("Module telegram_bridge.py not yet implemented - Telegram disabled.")
 
-# --- Port utilities ----------------------------------------------------
+# --- Port utilities ---------------------------------------------------
 
 def _find_free_port(start: int = 3333, max_attempts: int = 10) -> int:
     for port in range(start, start + max_attempts):
@@ -90,11 +90,11 @@ def _find_free_port(start: int = 3333, max_attempts: int = 10) -> int:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             if s.connect_ex(("127.0.0.1", port)) != 0:
                 return port
-    raise RuntimeError(f"Nessuna porta libera trovata tra {start} e {start + max_attempts}")
+    raise RuntimeError(f"No free port found between {start} and {start + max_attempts}")
 
 
 def _update_env_port(port: int) -> None:
-    """Persiste la porta nel file .env."""
+    """Persists the port to the .env file."""
     env_path = ROOT_DIR / ".env"
     lines = env_path.read_text(encoding="utf-8").splitlines() if env_path.exists() else []
     key = "MYCOW_PORT"
@@ -109,14 +109,14 @@ def _update_env_port(port: int) -> None:
     env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-# --- Comandi CLI -------------------------------------------------------
+# --- CLI Commands -------------------------------------------------------
 
 def cmd_start(args):
-    logger.info("Avvio MyCow daemon...")
+    logger.info("Starting MyCow daemon...")
 
     if EMERGENCY_STOP_FILE.exists():
         logger.error(
-            "File EMERGENCY_STOP presente nella root. Rimuovilo per avviare: %s",
+            "EMERGENCY_STOP file found in root. Remove it to start: %s",
             EMERGENCY_STOP_FILE,
         )
         sys.exit(1)
@@ -127,7 +127,7 @@ def cmd_start(args):
     requested_port = PORT
     port = _find_free_port(requested_port)
     if port != requested_port:
-        logger.warning("Porta %d occupata, uso %d", requested_port, port)
+        logger.warning("Port %d in use, switching to %d", requested_port, port)
         _update_env_port(port)
         os.environ["MYCOW_PORT"] = str(port)
     else:
@@ -144,7 +144,7 @@ def cmd_start(args):
             sched_instance.start()
             started.append("CronScheduler")
         except Exception as e:
-            logger.error("Errore avvio CronScheduler: %s", e)
+            logger.error("Error starting CronScheduler: %s", e)
 
     if _heartbeat:
         try:
@@ -152,7 +152,7 @@ def cmd_start(args):
             hb_instance.start()
             started.append("HeartbeatManager")
         except Exception as e:
-            logger.error("Errore avvio HeartbeatManager: %s", e)
+            logger.error("Error starting HeartbeatManager: %s", e)
 
     if _telegram:
         try:
@@ -162,10 +162,10 @@ def cmd_start(args):
             tg_instance.start()
             started.append("TelegramBridge")
         except Exception as e:
-            logger.error("Errore avvio TelegramBridge: %s", e)
+            logger.error("Error starting TelegramBridge: %s", e)
 
     if _api:
-        logger.info("Web UI disponibile su http://127.0.0.1:%d", port)
+        logger.info("Web UI available at http://127.0.0.1:%d", port)
         started.append("API")
         try:
             flask_app = _api.create_app(
@@ -175,28 +175,28 @@ def cmd_start(args):
             )
             flask_app.run(host="127.0.0.1", port=port, use_reloader=False)
         except Exception as e:
-            logger.error("Errore avvio API: %s", e)
+            logger.error("Error starting API: %s", e)
     else:
         if started:
-            logger.info("Componenti avviati: %s", ", ".join(started))
-            logger.info("Daemon in esecuzione. Ctrl+C per fermare.")
+            logger.info("Components started: %s", ", ".join(started))
+            logger.info("Daemon running. Press Ctrl+C to stop.")
             try:
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
-                logger.info("Interruzione manuale. Arresto daemon.")
+                logger.info("Manual interrupt. Stopping daemon.")
         else:
             logger.warning(
-                "Nessun modulo disponibile. "
-                "Implementa i moduli in daemon/ e riavvia."
+                "No modules available. "
+                "Implement modules in daemon/ and restart."
             )
 
 
 def cmd_stop(args):
-    logger.info("Creazione file EMERGENCY_STOP per fermare tutti gli agenti...")
+    logger.info("Creating EMERGENCY_STOP file to halt all agents...")
     EMERGENCY_STOP_FILE.touch()
-    logger.info("EMERGENCY_STOP creato. Il daemon non avviera' nuovi agenti.")
-    logger.info("Per rimuovere il blocco: elimina il file %s", EMERGENCY_STOP_FILE)
+    logger.info("EMERGENCY_STOP created. The daemon will not start new agents.")
+    logger.info("To remove the block: delete the file %s", EMERGENCY_STOP_FILE)
 
 
 def cmd_status(args):
@@ -204,18 +204,18 @@ def cmd_status(args):
 
     print("\n=== MyCow Status ===")
     print(f"Root:            {ROOT_DIR}")
-    print(f"Porta:           {PORT}")
-    print(f"Emergency stop:  {'SI - daemon bloccato' if EMERGENCY_STOP_FILE.exists() else 'no'}")
+    print(f"Port:            {PORT}")
+    print(f"Emergency stop:  {'YES - daemon blocked' if EMERGENCY_STOP_FILE.exists() else 'no'}")
     print()
 
     agents_dir = ROOT_DIR / "agents"
     agents = [d for d in agents_dir.iterdir() if d.is_dir()] if agents_dir.exists() else []
-    print(f"Agenti definiti: {len(agents)}")
+    print(f"Agents defined:  {len(agents)}")
     for agent in agents:
         print(f"  - {agent.name}")
 
     print()
-    print("Moduli:")
+    print("Modules:")
     modules = {
         "api.py":             _api,
         "scheduler.py":       _scheduler,
@@ -223,7 +223,7 @@ def cmd_status(args):
         "telegram_bridge.py": _telegram,
     }
     for name, mod in modules.items():
-        status = "[ok] disponibile" if mod else "[--] non implementato"
+        status = "[ok] available" if mod else "[--] not implemented"
         print(f"  {name:<22} {status}")
     print()
 
@@ -237,13 +237,13 @@ def main():
     subparsers = parser.add_subparsers(dest="command", metavar="<command>")
     subparsers.required = True
 
-    p_start = subparsers.add_parser("start", help="Avvia il daemon MyCow")
+    p_start = subparsers.add_parser("start", help="Start the MyCow daemon")
     p_start.set_defaults(func=cmd_start)
 
-    p_stop = subparsers.add_parser("stop", help="Ferma tutti gli agenti (crea EMERGENCY_STOP)")
+    p_stop = subparsers.add_parser("stop", help="Stop all agents (creates EMERGENCY_STOP)")
     p_stop.set_defaults(func=cmd_stop)
 
-    p_status = subparsers.add_parser("status", help="Mostra stato del daemon e degli agenti")
+    p_status = subparsers.add_parser("status", help="Show daemon and agent status")
     p_status.set_defaults(func=cmd_status)
 
     args = parser.parse_args()
