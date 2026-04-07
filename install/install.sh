@@ -91,7 +91,17 @@ fi
 step "Creazione ambiente virtuale Python"
 
 if [ ! -d "$VENV_DIR" ]; then
-    "$PYTHON_CMD" -m venv "$VENV_DIR"
+    if ! "$PYTHON_CMD" -m venv "$VENV_DIR" 2>/dev/null; then
+        # Su Debian/Ubuntu python3-venv non e' incluso di default
+        PYTHON_VER=$("$PYTHON_CMD" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
+        warn "python3-venv non trovato. Installo python${PYTHON_VER}-venv..."
+        if command -v apt-get &>/dev/null; then
+            sudo apt-get install -y "python${PYTHON_VER}-venv" --quiet || fail "Impossibile installare python${PYTHON_VER}-venv. Esegui manualmente: sudo apt install python${PYTHON_VER}-venv"
+        else
+            fail "Impossibile creare il venv. Installa il pacchetto python3-venv per la tua distro."
+        fi
+        "$PYTHON_CMD" -m venv "$VENV_DIR" || fail "Creazione venv fallita anche dopo aver installato python${PYTHON_VER}-venv."
+    fi
     ok "Venv creato in $VENV_DIR"
 else
     ok "Venv gia' esistente"
