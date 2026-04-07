@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Notion__notion-search",
+      "mcp__claude_ai_Notion__notion-fetch",
+      "Read(//c/Users/anso1/**)",
+      "Bash(python daemon/main.py status)",
+      "Bash(pip install:*)",
+      "Bash(python -c \"from daemon.scheduler import CronScheduler; s = CronScheduler\\(\\); print\\('Import OK'\\); print\\('Jobs:', s.list_jobs\\(\\)\\)\")",
+      "Bash(python -c ':*)",
+      "Bash(curl -s http://localhost:3333/health)",
+      "Bash(python -c \"from daemon.telegram_bridge import TelegramBridge, sanitize_input; print\\('Import OK'\\); print\\(sanitize_input\\('ciao'\\)\\); print\\(sanitize_input\\('test --dangerously' \\)\\)\")",
+      "Bash(python -c \"import telegram; print\\(telegram.__version__\\)\")",
+      "Read(//tmp/**)",
+      "Read(//c/tmp/**)"
+    ],
+    "additionalDirectories": [
+      "\\tmp\\mycow-wiki",
+      "c:\\Users\\anso1\\source_cursor\\MyCow.wiki"
+    ]
+  }
+}
