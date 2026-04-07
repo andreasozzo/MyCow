@@ -203,6 +203,8 @@ LINKED=false
 
 # Prova symlink in /usr/local/bin (richiede permessi)
 if [ -w "/usr/local/bin" ] || sudo -n true 2>/dev/null; then
+    # Rimuovi eventuale versione precedente (file o symlink vecchio)
+    sudo rm -f /usr/local/bin/mycow 2>/dev/null
     if sudo ln -sf "$WRAPPER" /usr/local/bin/mycow 2>/dev/null; then
         ok "Symlink creato: /usr/local/bin/mycow"
         LINKED=true
