@@ -97,6 +97,18 @@ mycow skill install brave-search
 mycow skill add brave-search --agent news-monitor
 ```
 
+### Coding agents
+
+MyCow is a natural fit for developer workflows. You can create agents that:
+- **Watch a repository** and notify you when tests fail or a PR needs review
+- **Run tests on schedule** — pull the latest code at midnight, execute your test suite, send results to Telegram
+- **Auto-generate changelogs** — read git history weekly and write human-readable summaries
+- **Create branches and PRs** — refactor code, run linters, commit with semantic messages, open draft PRs while you sleep
+
+The `git-workflow` skill gives agents semantic commit + PR capabilities. Combine it with `bash` permissions (scoped to `git *` and your test runner) for safe, auditable automation.
+
+See [Developer Agents](https://github.com/andreasozzo/mycow/wiki/Developer-Agents) in the wiki for detailed examples.
+
 ---
 
 ## Security
