@@ -10,7 +10,7 @@
 
 $ErrorActionPreference = "Stop"
 
-$MYCOW_REPO_URL = "https://github.com/andreasozzo/MyCow/archive/refs/heads/main.zip"
+$MYCOW_REPO_URL = "https://github.com/andreasozzo/MyCow/archive/refs/heads/master.zip"
 $INSTALL_DIR    = Join-Path $HOME "MyCow"
 $VENV_DIR       = Join-Path $INSTALL_DIR "venv"
 $MIN_PYTHON     = [Version]"3.11"
@@ -99,6 +99,7 @@ Write-Step "Installazione dipendenze Python"
 
 $pip = Join-Path $VENV_DIR "Scripts\pip.exe"
 $reqFile = Join-Path $INSTALL_DIR "requirements.txt"
+if (-not (Test-Path $reqFile)) { Write-Fail "requirements.txt non trovato in $INSTALL_DIR. L'installazione e' corrotta — rimuovi $INSTALL_DIR e riprova." }
 & $pip install --upgrade pip --quiet
 & $pip install -r $reqFile --quiet
 Write-Ok "Dipendenze installate"

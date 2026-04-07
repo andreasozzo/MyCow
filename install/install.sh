@@ -60,9 +60,29 @@ fi
 
 step "Download MyCow"
 
+# Verifica che unzip sia disponibile
+if ! command -v unzip &>/dev/null; then
+    warn "unzip non trovato. Installo..."
+    if command -v apt-get &>/dev/null; then
+        sudo apt-get install -y unzip --quiet || fail "Impossibile installare unzip."
+    elif command -v brew &>/dev/null; then
+        brew install unzip --quiet || fail "Impossibile installare unzip."
+    else
+        fail "unzip non trovato. Installalo con il package manager della tua distro."
+    fi
+fi
+
 if [ -d "$INSTALL_DIR" ]; then
-    warn "Cartella $INSTALL_DIR gia' esistente. Aggiorno solo le dipendenze."
-else
+    # Se la cartella esiste ma manca requirements.txt, e' un'installazione rotta
+    if [ ! -f "$INSTALL_DIR/requirements.txt" ]; then
+        warn "Installazione corrotta trovata. Rimuovo e riscarico..."
+        rm -rf "$INSTALL_DIR"
+    else
+        warn "Cartella $INSTALL_DIR gia' esistente. Aggiorno solo le dipendenze."
+    fi
+fi
+
+if [ ! -d "$INSTALL_DIR" ]; then
     TMP_ZIP=$(mktemp /tmp/mycow_XXXXXX.zip)
     TMP_EXTRACT=$(mktemp -d /tmp/mycow_extract_XXXXXX)
 
@@ -77,7 +97,7 @@ else
 
     unzip -q "$TMP_ZIP" -d "$TMP_EXTRACT"
 
-    # La zip di GitHub estrae in una sottocartella (es. mycow-main)
+    # La zip di GitHub estrae in una sottocartella (es. MyCow-master)
     INNER_DIR=$(find "$TMP_EXTRACT" -maxdepth 1 -mindepth 1 -type d | head -1)
     mv "$INNER_DIR" "$INSTALL_DIR"
 
@@ -90,18 +110,24 @@ fi
 
 step "Creazione ambiente virtuale Python"
 
+if [ -d "$VENV_DIR" ] && [ ! -f "$VENV_DIR/bin/pip" ]; then
+    warn "Venv corrotto trovato. Rimuovo e ricreo..."
+    rm -rf "$VENV_DIR"
+fi
+
 if [ ! -d "$VENV_DIR" ]; then
-    if ! "$PYTHON_CMD" -m venv "$VENV_DIR" 2>/dev/null; then
-        # Su Debian/Ubuntu python3-venv non e' incluso di default
+    # Controlla PRIMA se il modulo venv e' disponibile (Debian/Ubuntu non lo include di default)
+    if ! "$PYTHON_CMD" -c "import ensurepip" 2>/dev/null; then
         PYTHON_VER=$("$PYTHON_CMD" --version 2>&1 | grep -oE '[0-9]+\.[0-9]+' | head -1)
-        warn "python3-venv non trovato. Installo python${PYTHON_VER}-venv..."
+        warn "Modulo venv non disponibile. Installo python${PYTHON_VER}-venv (richiede password sudo)..."
         if command -v apt-get &>/dev/null; then
-            sudo apt-get install -y "python${PYTHON_VER}-venv" --quiet || fail "Impossibile installare python${PYTHON_VER}-venv. Esegui manualmente: sudo apt install python${PYTHON_VER}-venv"
+            sudo apt-get install -y "python${PYTHON_VER}-venv" --quiet \
+                || fail "Impossibile installare python${PYTHON_VER}-venv. Esegui: sudo apt install python${PYTHON_VER}-venv"
         else
-            fail "Impossibile creare il venv. Installa il pacchetto python3-venv per la tua distro."
+            fail "Installa python3-venv per la tua distro e riprova."
         fi
-        "$PYTHON_CMD" -m venv "$VENV_DIR" || fail "Creazione venv fallita anche dopo aver installato python${PYTHON_VER}-venv."
     fi
+    "$PYTHON_CMD" -m venv "$VENV_DIR" || fail "Creazione venv fallita."
     ok "Venv creato in $VENV_DIR"
 else
     ok "Venv gia' esistente"
@@ -111,6 +137,7 @@ fi
 
 step "Installazione dipendenze Python"
 
+[ ! -f "$INSTALL_DIR/requirements.txt" ] && fail "requirements.txt non trovato. Installazione corrotta — rimuovi $INSTALL_DIR e riprova."
 "$VENV_DIR/bin/pip" install --upgrade pip --quiet
 "$VENV_DIR/bin/pip" install -r "$INSTALL_DIR/requirements.txt" --quiet
 ok "Dipendenze installate"
