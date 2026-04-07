@@ -270,7 +270,7 @@ class TelegramBridge:
         if not self._is_allowed(str(update.effective_chat.id)):
             return
         if not context.args:
-            await update.message.reply_text("Uso: /run <nome-agente>")
+            await update.message.reply_text("Usage: /run <agent-name>")
             return
         agent_name = context.args[0]
         agent_dir = AGENTS_DIR / agent_name
@@ -301,7 +301,7 @@ class TelegramBridge:
             output = (result.get("output") or "")[:500]
             self.send_message(f"[{agent_name}] {status}\n{output}", str(chat_id))
         except Exception as e:
-            self.send_message(f"[{agent_name}] Errore: {e}", str(chat_id))
+            self.send_message(f"[{agent_name}] Error: {e}", str(chat_id))
 
     async def _cmd_stop(self, update, context):
         if not self._is_allowed(str(update.effective_chat.id)):
@@ -330,7 +330,7 @@ class TelegramBridge:
         if not self._is_allowed(str(update.effective_chat.id)):
             return
         if not context.args:
-            await update.message.reply_text("Uso: /pause <nome-agente>")
+            await update.message.reply_text("Usage: /pause <agent-name>")
             return
         name = context.args[0]
         if self._scheduler:
@@ -343,7 +343,7 @@ class TelegramBridge:
         if not self._is_allowed(str(update.effective_chat.id)):
             return
         if not context.args:
-            await update.message.reply_text("Uso: /resume <nome-agente>")
+            await update.message.reply_text("Usage: /resume <agent-name>")
             return
         name = context.args[0]
         if self._scheduler:
@@ -356,7 +356,7 @@ class TelegramBridge:
         if not self._is_allowed(str(update.effective_chat.id)):
             return
         if not context.args:
-            await update.message.reply_text("Uso: /logs <nome-agente>")
+            await update.message.reply_text("Usage: /logs <agent-name>")
             return
         name = context.args[0]
         from daemon.agent_runner import get_logs
@@ -377,7 +377,7 @@ class TelegramBridge:
         if not self._is_allowed(str(update.effective_chat.id)):
             return
         if not context.args:
-            await update.message.reply_text("Uso: /schedule <nome-agente>")
+            await update.message.reply_text("Usage: /schedule <agent-name>")
             return
         name = context.args[0]
         if not self._scheduler:
@@ -396,7 +396,7 @@ class TelegramBridge:
         if not self._is_allowed(str(update.effective_chat.id)):
             return
         if not context.args:
-            await update.message.reply_text("Uso: /heartbeat <nome-agente>")
+            await update.message.reply_text("Usage: /heartbeat <agent-name>")
             return
         name = context.args[0]
         if not self._heartbeat:

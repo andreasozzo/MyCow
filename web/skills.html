@@ -143,7 +143,7 @@
           </div>
           ${badge}
         </div>
-        <div class="skill-desc">${escHtml(skill.description || 'Nessuna descrizione')}</div>
+        <div class="skill-desc">${escHtml(skill.description || 'No description')}</div>
         ${envWarn}
         <div class="skill-footer">${action}</div>
       </div>`;
@@ -163,19 +163,19 @@
         .map(sk => `<option value="${sk.name}">${sk.name}</option>`).join('');
       const addSelect = addOptions
         ? `<select class="add-skill-select" style="background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:var(--radius-sm);color:var(--color-text-secondary);font-size:12px;padding:2px 6px;cursor:pointer" onchange="addSkillToAgent('${a.name}',this)">
-             <option value="">+ Aggiungi skill</option>${addOptions}
+             <option value="">+ Add skill</option>${addOptions}
            </select>`
         : '';
       return `
         <div class="agent-skill-row">
           <div class="agent-name">${escHtml(a.name)}</div>
-          <div class="agent-skills-badges">${badges || '<span style="color:var(--color-text-muted);font-size:12px">Nessuna skill</span>'}</div>
+          <div class="agent-skills-badges">${badges || '<span style="color:var(--color-text-muted);font-size:12px">No skills</span>'}</div>
           ${addSelect}
         </div>`;
     }).join('');
     return `
       <div class="agents-section">
-        <div class="section-title">Skill per agente</div>
+        <div class="section-title">Skills per agent</div>
         ${rows}
       </div>`;
   }
@@ -187,12 +187,12 @@
     html += `<div class="section-title">Installate (${installed.length})</div>`;
     html += installed.length
       ? `<div class="skills-grid">${installed.map(s => renderSkillCard(s, true)).join('')}</div>`
-      : `<div class="empty-state" style="margin-bottom:var(--space-8)">Nessuna skill installata.</div>`;
+      : `<div class="empty-state" style="margin-bottom:var(--space-8)">No skills installed.</div>`;
 
     html += `<div class="section-title">Disponibili (${available.length})</div>`;
     html += available.length
       ? `<div class="skills-grid">${available.map(s => renderSkillCard(s, false)).join('')}</div>`
-      : `<div class="empty-state" style="margin-bottom:var(--space-8)">Tutte le skill del registry sono installate.</div>`;
+      : `<div class="empty-state" style="margin-bottom:var(--space-8)">All registry skills are installed.</div>`;
 
     html += renderAgentSkills();
     document.getElementById('content').innerHTML = html;
@@ -219,8 +219,8 @@
       });
       const data = await res.json();
       if (res.ok) { showToast(`Skill '${name}' installata`, 'success'); await fetchData(); }
-      else showToast(data.message || 'Errore', 'error');
-    } catch { showToast('Errore di rete', 'error'); }
+      else showToast(data.message || 'Error', 'error');
+    } catch { showToast('Network error', 'error'); }
     if (card) card.style.opacity = '';
   }
 
@@ -230,8 +230,8 @@
       const res = await fetch(`/api/skills/${name}`, { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) { showToast(`Skill '${name}' disinstallata`, 'success'); await fetchData(); }
-      else showToast(data.message || 'Errore', 'error');
-    } catch { showToast('Errore di rete', 'error'); }
+      else showToast(data.message || 'Error', 'error');
+    } catch { showToast('Network error', 'error'); }
   }
 
   async function addSkillToAgent(agentName, select) {
@@ -242,8 +242,8 @@
       const res = await fetch(`/api/agents/${agentName}/skills/${skill}`, { method: 'POST' });
       const data = await res.json();
       if (res.ok) { showToast(`Skill aggiunta a '${agentName}'`, 'success'); await fetchData(); }
-      else showToast(data.message || 'Errore', 'error');
-    } catch { showToast('Errore di rete', 'error'); }
+      else showToast(data.message || 'Error', 'error');
+    } catch { showToast('Network error', 'error'); }
   }
 
   async function removeSkillFromAgent(agentName, skill) {
@@ -251,8 +251,8 @@
       const res = await fetch(`/api/agents/${agentName}/skills/${skill}`, { method: 'DELETE' });
       const data = await res.json();
       if (res.ok) { showToast(`Skill rimossa da '${agentName}'`, 'success'); await fetchData(); }
-      else showToast(data.message || 'Errore', 'error');
-    } catch { showToast('Errore di rete', 'error'); }
+      else showToast(data.message || 'Error', 'error');
+    } catch { showToast('Network error', 'error'); }
   }
 
   async function fetchHealth() {

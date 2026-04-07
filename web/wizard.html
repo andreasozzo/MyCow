@@ -341,7 +341,7 @@
       <div class="schedule-helper">${presetBtns}</div>
       <div class="field" style="margin-top:var(--space-3)">
         <label>Prompt *</label>
-        <textarea id="cronPrompt-${idx}" placeholder="Cosa deve fare l'agente in questo cron...">${data.prompt || ''}</textarea>
+        <textarea id="cronPrompt-${idx}" placeholder="What should this agent do in this cron...">${data.prompt || ''}</textarea>
       </div>`;
     container.appendChild(div);
   }
@@ -367,7 +367,7 @@
       const installed = data.installed || [];
       const container = document.getElementById('skillsContainer');
       if (!installed.length) {
-        container.innerHTML = '<div style="color:var(--color-text-muted);font-size:13px">Nessuna skill installata. <a href="/skills.html" style="color:var(--color-primary-light)">Vai alle skill →</a></div>';
+        container.innerHTML = '<div style="color:var(--color-text-muted);font-size:13px">No skills installed. <a href="/skills.html" style="color:var(--color-primary-light)">Go to skills →</a></div>';
         return;
       }
       container.innerHTML = `<div class="skills-grid">${installed.map(s => {
@@ -384,7 +384,7 @@
           </label>`;
       }).join('')}</div>`;
     } catch(e) {
-      document.getElementById('skillsContainer').innerHTML = '<div style="color:var(--color-text-muted);font-size:13px">Errore caricamento skill.</div>';
+      document.getElementById('skillsContainer').innerHTML = '<div style="color:var(--color-text-muted);font-size:13px">Error loading skills.</div>';
     }
   }
 
@@ -443,15 +443,15 @@
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(`Agente '${name}' creato!`, 'success');
+        showToast(`Agent '${name}' created!`, 'success');
         setTimeout(() => location.href = `/agent.html?name=${name}`, 800);
       } else {
-        showToast(data.message || 'Errore creazione', 'error');
-        btn.disabled = false; btn.textContent = 'Crea agente →';
+        showToast(data.message || 'Error creating', 'error');
+        btn.disabled = false; btn.textContent = 'Create agent →';
       }
     } catch {
-      showToast('Errore di rete', 'error');
-      btn.disabled = false; btn.textContent = 'Crea agente →';
+      showToast('Network error', 'error');
+      btn.disabled = false; btn.textContent = 'Create agent →';
     }
   }
 

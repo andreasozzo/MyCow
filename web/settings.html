@@ -283,9 +283,9 @@
         body: JSON.stringify({[key]: val}),
       });
       const data = await res.json();
-      if (res.ok) showToast('Salvato', 'success');
-      else showToast(data.message || 'Errore', 'error');
-    } catch { showToast('Errore di rete', 'error'); }
+      if (res.ok) showToast('Saved', 'success');
+      else showToast(data.message || 'Error', 'error');
+    } catch { showToast('Network error', 'error'); }
   }
 
   async function saveSecret(key, inputId, statusId) {
@@ -300,21 +300,21 @@
       const data = await res.json();
       if (res.ok) {
         document.getElementById(inputId).value = '';
-        showToast('Salvato', 'success');
-        fetchSettings(); // aggiorna status
+        showToast('Saved', 'success');
+        fetchSettings(); // refresh status
       } else {
-        showToast(data.message || 'Errore', 'error');
+        showToast(data.message || 'Error', 'error');
       }
-    } catch { showToast('Errore di rete', 'error'); }
+    } catch { showToast('Network error', 'error'); }
   }
 
   async function triggerEmergencyStop() {
-    if (!confirm('Attivare Emergency Stop? Tutti gli agenti verranno fermati.')) return;
+    if (!confirm('Activate Emergency Stop? All agents will be stopped.')) return;
     try {
       await fetch('/api/stop-all', { method: 'POST' });
-      showToast('Emergency Stop attivato', 'error');
+      showToast('Emergency Stop activated', 'error');
       fetchHealth();
-    } catch { showToast('Errore di rete', 'error'); }
+    } catch { showToast('Network error', 'error'); }
   }
 
   fetchHealth();
