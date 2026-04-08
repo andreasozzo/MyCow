@@ -133,22 +133,32 @@ class TelegramBridge:
 
                 logger.info("Telegram bot listening...")
 
-                # Create polling task and run loop until stop event
+                # Create polling task
                 polling_task = loop.create_task(
                     app.run_polling(drop_pending_updates=True)
                 )
 
-                # Wait for stop event or task completion
-                while not self._stop_event.is_set() and not polling_task.done():
-                    _time.sleep(0.1)
-
-                # Cancel polling if still running
-                if not polling_task.done():
+                # Create a task that waits for stop event
+                async def wait_for_stop():
+                    while not self._stop_event.is_set():
+                        await asyncio.sleep(0.1)
                     polling_task.cancel()
-                    try:
-                        loop.run_until_complete(polling_task)
-                    except asyncio.CancelledError:
-                        pass
+
+                stop_task = loop.create_task(wait_for_stop())
+
+                try:
+                    # Run until either task completes
+                    done, pending = loop.run_until_complete(
+                        asyncio.wait(
+                            [polling_task, stop_task],
+                            return_when=asyncio.FIRST_COMPLETED
+                        )
+                    )
+                    # Cancel remaining tasks
+                    for task in pending:
+                        task.cancel()
+                except Exception:
+                    pass
 
                 if self._stop_event.is_set():
                     break
