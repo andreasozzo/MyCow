@@ -108,16 +108,11 @@ class TelegramBridge:
 
     def _run_polling(self):
         import asyncio
-        import time as _time
         from telegram.ext import Application, CommandHandler, MessageHandler, filters
-        import warnings
 
-        # Create a new event loop for this thread
-        # Suppress set_wakeup_fd warnings on Linux in non-main thread (they're harmless)
         asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        warnings.filterwarnings("ignore", message=".*set_wakeup_fd.*")
 
         backoff = 5
         while not self._stop_event.is_set():
@@ -135,13 +130,7 @@ class TelegramBridge:
                 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message))
 
                 logger.info("Telegram bot listening...")
-                try:
-                    loop.run_until_complete(
-                        app.run_polling(drop_pending_updates=True)
-                    )
-                except RuntimeError:
-                    # Ignore set_wakeup_fd errors on Linux non-main thread
-                    pass
+                loop.run_until_complete(self._polling_loop(app))
 
                 if self._stop_event.is_set():
                     break
@@ -155,6 +144,17 @@ class TelegramBridge:
             backoff = min(backoff * 2, 60)
 
         loop.close()
+
+    async def _polling_loop(self, app):
+        """Run polling without signal handlers (safe on non-main threads)."""
+        async with app:
+            await app.start()
+            await app.updater.start_polling(drop_pending_updates=True)
+            # Block until stop_event is set
+            while not self._stop_event.is_set():
+                await __import__("asyncio").sleep(1)
+            await app.updater.stop()
+            await app.stop()
 
     def _is_allowed(self, chat_id: str) -> bool:
         if not self._allowed_chat_ids:
