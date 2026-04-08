@@ -110,11 +110,14 @@ class TelegramBridge:
         import asyncio
         import time as _time
         from telegram.ext import Application, CommandHandler, MessageHandler, filters
+        import warnings
 
         # Create a new event loop for this thread
+        # Suppress set_wakeup_fd warnings on Linux in non-main thread (they're harmless)
         asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        warnings.filterwarnings("ignore", message=".*set_wakeup_fd.*")
 
         backoff = 5
         while not self._stop_event.is_set():
@@ -132,32 +135,12 @@ class TelegramBridge:
                 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message))
 
                 logger.info("Telegram bot listening...")
-
-                # Create polling task
-                polling_task = loop.create_task(
-                    app.run_polling(drop_pending_updates=True)
-                )
-
-                # Create a task that waits for stop event
-                async def wait_for_stop():
-                    while not self._stop_event.is_set():
-                        await asyncio.sleep(0.1)
-                    polling_task.cancel()
-
-                stop_task = loop.create_task(wait_for_stop())
-
                 try:
-                    # Run until either task completes
-                    done, pending = loop.run_until_complete(
-                        asyncio.wait(
-                            [polling_task, stop_task],
-                            return_when=asyncio.FIRST_COMPLETED
-                        )
+                    loop.run_until_complete(
+                        app.run_polling(drop_pending_updates=True)
                     )
-                    # Cancel remaining tasks
-                    for task in pending:
-                        task.cancel()
-                except Exception:
+                except RuntimeError:
+                    # Ignore set_wakeup_fd errors on Linux non-main thread
                     pass
 
                 if self._stop_event.is_set():
