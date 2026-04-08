@@ -10,7 +10,7 @@ import socket
 import sys
 import time
 from collections import deque
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 # Ensures the project root is in sys.path when main.py is run
@@ -35,7 +35,7 @@ class MemoryLogHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         try:
             LOG_BUFFER.append({
-                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "timestamp": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                 "level": record.levelname,
                 "logger": record.name,
                 "message": self.format(record),
