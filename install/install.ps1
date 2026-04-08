@@ -83,13 +83,24 @@ if ($freshInstall) {
     Move-Item $innerDir.FullName $INSTALL_DIR
     Write-Ok "Extracted to $INSTALL_DIR"
 } else {
-    # Update web files
-    $webSrcPath = Join-Path $innerDir.FullName "web"
-    $webDstPath = Join-Path $INSTALL_DIR "web"
-    if (Test-Path $webSrcPath) {
-        Copy-Item -Path "$webSrcPath\*" -Destination $webDstPath -Force -Recurse
-        Write-Ok "Updated web files"
+    # Update core files (daemon, web, install) but preserve config (agents, skills/global, .env)
+    foreach ($dir in @("web", "daemon", "install")) {
+        $srcPath = Join-Path $innerDir.FullName $dir
+        $dstPath = Join-Path $INSTALL_DIR $dir
+        if (Test-Path $srcPath) {
+            if (Test-Path $dstPath) { Remove-Item $dstPath -Recurse -Force }
+            Copy-Item -Path $srcPath -Destination $dstPath -Recurse -Force
+        }
     }
+    # Also update non-config files
+    foreach ($file in @("README.md", "CLAUDE.md", "LICENSE", "requirements.txt", ".env.example")) {
+        $srcFile = Join-Path $innerDir.FullName $file
+        $dstFile = Join-Path $INSTALL_DIR $file
+        if (Test-Path $srcFile) {
+            Copy-Item -Path $srcFile -Destination $dstFile -Force
+        }
+    }
+    Write-Ok "Updated core files (daemon, web, install, docs)"
 }
 
 Remove-Item $zipPath -Force

@@ -108,11 +108,20 @@ if [ "$FRESH_INSTALL" = true ]; then
     mv "$INNER_DIR" "$INSTALL_DIR"
     ok "Extracted to $INSTALL_DIR"
 else
-    # Update web files
-    if [ -d "$INNER_DIR/web" ]; then
-        cp -r "$INNER_DIR/web"/* "$INSTALL_DIR/web/" 2>/dev/null || true
-        ok "Updated web files"
-    fi
+    # Update core files (daemon, web, install) but preserve config (agents, skills/global, .env)
+    for dir in web daemon install; do
+        if [ -d "$INNER_DIR/$dir" ]; then
+            rm -rf "$INSTALL_DIR/$dir"
+            cp -r "$INNER_DIR/$dir" "$INSTALL_DIR/$dir"
+        fi
+    done
+    # Also update non-config files
+    for file in README.md CLAUDE.md LICENSE requirements.txt .env.example; do
+        if [ -f "$INNER_DIR/$file" ]; then
+            cp "$INNER_DIR/$file" "$INSTALL_DIR/$file"
+        fi
+    done
+    ok "Updated core files (daemon, web, install, docs)"
 fi
 
 rm -f "$TMP_ZIP"
