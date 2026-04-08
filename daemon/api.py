@@ -119,14 +119,6 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None, log_buffer=Non
             return send_from_directory(str(WEB_DIR), "index.html")
         return _ok({"message": "MyCow API running. Web UI not yet built."})
 
-    @app.route("/<path:filename>")
-    def static_files(filename):
-        if WEB_DIR.exists():
-            file_path = WEB_DIR / filename
-            if file_path.exists() and file_path.is_file():
-                return send_from_directory(str(WEB_DIR), filename)
-        return _err("File not found", 404)
-
     # ------------------------------------------------------------------
     # Daemon Logs
     # ------------------------------------------------------------------
@@ -492,5 +484,17 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None, log_buffer=Non
             except Exception:
                 pass
         return _ok({"message": "EMERGENCY_STOP activated. All agents stopped."})
+
+    # ------------------------------------------------------------------
+    # Serve Static Web UI (catch-all, must be last)
+    # ------------------------------------------------------------------
+
+    @app.route("/<path:filename>")
+    def static_files(filename):
+        if WEB_DIR.exists():
+            file_path = WEB_DIR / filename
+            if file_path.exists() and file_path.is_file():
+                return send_from_directory(str(WEB_DIR), filename)
+        return _err("File not found", 404)
 
     return app
