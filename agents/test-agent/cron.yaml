@@ -15,12 +15,12 @@ crons:
     schedule: "0 8 * * *"
     model: claude-haiku-4-5-20251001
     prompt: >
-      Cerca la notizia piu' importante di oggi. Solo due righe.
-      Scrivila in output.txt nella tua cartella (sovrascrivila).
+      Find the most important news of today. Only two lines.
+      Write it to output.txt in your folder (overwrite it).
 
   - id: news-evening
     schedule: "0 18 * * *"
     model: claude-sonnet-4-6
     prompt: >
-      Fai un riassunto delle notizie principali della giornata.
-      Appendilo a output.txt con intestazione "=== SERA ===".
+      Summarize the main news stories of the day.
+      Append it to output.txt with heading "=== EVENING ===".

@@ -13,16 +13,16 @@ crons:
     schedule: "0 8 * * *"
     model: claude-haiku-4-5-20251001
     prompt: >
-      Cerca le 3 notizie piu' importanti di oggi nel mondo e in Italia.
-      Per ogni notizia: titolo, una riga di sintesi, fonte URL.
-      Scrivi il risultato in memory/today.md (sovrascrivilo completamente).
-      Poi scrivi in output il testo formattato da inviare via Telegram.
+      Find the 3 most important news stories today worldwide and locally.
+      For each story: title, one line summary, source URL.
+      Write the result to memory/today.md (overwrite completely).
+      Then write formatted output to send via Telegram.
 
   - id: evening-recap
     schedule: "0 18 * * *"
     model: claude-sonnet-4-6
     prompt: >
-      Leggi memory/today.md con le notizie del mattino.
-      Cerca aggiornamenti e sviluppi sulle stesse storie.
-      Appendi il recap serale in memory/today.md con intestazione "=== SERA ===".
-      Poi scrivi in output il testo del recap da inviare via Telegram.
+      Read memory/today.md with the morning news.
+      Search for updates and developments on the same stories.
+      Append the evening recap to memory/today.md with heading "=== EVENING ===".
+      Then write the recap text to output to send via Telegram.

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -92,7 +92,7 @@
   <div class="header-right">
     <div class="daemon-badge">
       <div class="daemon-dot" id="daemonDot"></div>
-      <span id="daemonLabel">Connessione...</span>
+      <span id="daemonLabel">Connecting...</span>
     </div>
   </div>
 </header>
@@ -102,7 +102,7 @@
     <div class="page-header">
       <div>
         <div class="page-title">Skills</div>
-        <div class="page-subtitle">Installa e gestisci le skill degli agenti</div>
+        <div class="page-subtitle">Install and manage agent skills</div>
       </div>
     </div>
 
@@ -129,11 +129,11 @@
 
   function renderSkillCard(skill, isInstalled) {
     const envOk = !skill.requires_env || skill.requires_env.length === 0;
-    const envWarn = !envOk ? `<div class="env-warn">⚠ Env richieste: ${skill.requires_env.join(', ')}</div>` : '';
+    const envWarn = !envOk ? `<div class="env-warn">⚠ Required env vars: ${skill.requires_env.join(', ')}</div>` : '';
     const action = isInstalled
-      ? `<button class="btn btn-danger" onclick="uninstallSkill('${skill.name}')">Disinstalla</button>`
-      : `<button class="btn btn-primary" onclick="installSkill('${skill.name}')">+ Installa</button>`;
-    const badge = isInstalled ? `<span class="badge-installed">Installata</span>` : '';
+      ? `<button class="btn btn-danger" onclick="uninstallSkill('${skill.name}')">Uninstall</button>`
+      : `<button class="btn btn-primary" onclick="installSkill('${skill.name}')">+ Install</button>`;
+    const badge = isInstalled ? `<span class="badge-installed">Installed</span>` : '';
 
     return `
       <div class="skill-card ${isInstalled ? '' : 'available'}" id="skill-card-${skill.name}">
@@ -157,7 +157,7 @@
       const badges = skills.map(s => `
         <span class="badge-skill">
           ${escHtml(s)}
-          <span class="remove-skill" onclick="removeSkillFromAgent('${a.name}','${s}')" title="Rimuovi">✕</span>
+          <span class="remove-skill" onclick="removeSkillFromAgent('${a.name}','${s}')" title="Remove">✕</span>
         </span>`).join('');
       const addOptions = allData.installed
         .filter(sk => !skills.includes(sk.name))
@@ -185,12 +185,12 @@
     const { installed, available } = allData;
     let html = '';
 
-    html += `<div class="section-title">Installate (${installed.length})</div>`;
+    html += `<div class="section-title">Installed (${installed.length})</div>`;
     html += installed.length
       ? `<div class="skills-grid">${installed.map(s => renderSkillCard(s, true)).join('')}</div>`
       : `<div class="empty-state" style="margin-bottom:var(--space-8)">No skills installed.</div>`;
 
-    html += `<div class="section-title">Disponibili (${available.length})</div>`;
+    html += `<div class="section-title">Available (${available.length})</div>`;
     html += available.length
       ? `<div class="skills-grid">${available.map(s => renderSkillCard(s, false)).join('')}</div>`
       : `<div class="empty-state" style="margin-bottom:var(--space-8)">All registry skills are installed.</div>`;
@@ -219,18 +219,18 @@
         body: JSON.stringify({name}),
       });
       const data = await res.json();
-      if (res.ok) { showToast(`Skill '${name}' installata`, 'success'); await fetchData(); }
+      if (res.ok) { showToast(`Skill '${name}' installed`, 'success'); await fetchData(); }
       else showToast(data.message || 'Error', 'error');
     } catch { showToast('Network error', 'error'); }
     if (card) card.style.opacity = '';
   }
 
   async function uninstallSkill(name) {
-    if (!confirm(`Disinstallare la skill '${name}'?`)) return;
+    if (!confirm(`Uninstall skill '${name}'?`)) return;
     try {
       const res = await fetch(`/api/skills/${name}`, { method: 'DELETE' });
       const data = await res.json();
-      if (res.ok) { showToast(`Skill '${name}' disinstallata`, 'success'); await fetchData(); }
+      if (res.ok) { showToast(`Skill '${name}' uninstalled`, 'success'); await fetchData(); }
       else showToast(data.message || 'Error', 'error');
     } catch { showToast('Network error', 'error'); }
   }
@@ -242,7 +242,7 @@
     try {
       const res = await fetch(`/api/agents/${agentName}/skills/${skill}`, { method: 'POST' });
       const data = await res.json();
-      if (res.ok) { showToast(`Skill aggiunta a '${agentName}'`, 'success'); await fetchData(); }
+      if (res.ok) { showToast(`Skill added to '${agentName}'`, 'success'); await fetchData(); }
       else showToast(data.message || 'Error', 'error');
     } catch { showToast('Network error', 'error'); }
   }
@@ -251,7 +251,7 @@
     try {
       const res = await fetch(`/api/agents/${agentName}/skills/${skill}`, { method: 'DELETE' });
       const data = await res.json();
-      if (res.ok) { showToast(`Skill rimossa da '${agentName}'`, 'success'); await fetchData(); }
+      if (res.ok) { showToast(`Skill removed from '${agentName}'`, 'success'); await fetchData(); }
       else showToast(data.message || 'Error', 'error');
     } catch { showToast('Network error', 'error'); }
   }

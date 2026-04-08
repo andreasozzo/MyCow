@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -98,7 +98,7 @@
   <div class="header-right">
     <div class="daemon-badge">
       <div class="daemon-dot" id="daemonDot"></div>
-      <span id="daemonLabel">Connessione...</span>
+      <span id="daemonLabel">Connecting...</span>
     </div>
   </div>
 </header>
@@ -108,15 +108,15 @@
 
     <div class="page-header">
       <div class="page-title">Settings</div>
-      <div class="page-subtitle">Configurazione del daemon MyCow</div>
+      <div class="page-subtitle">MyCow daemon configuration</div>
     </div>
 
-    <!-- STATO DAEMON -->
+    <!-- DAEMON STATUS -->
     <div class="section">
-      <div class="section-title">Stato Daemon</div>
+      <div class="section-title">Daemon Status</div>
       <div class="card">
         <div class="status-grid" id="statusGrid">
-          <div class="status-item"><div class="status-item-label">Stato</div><div class="status-item-value" id="statusVal">—</div></div>
+          <div class="status-item"><div class="status-item-label">Status</div><div class="status-item-value" id="statusVal">—</div></div>
           <div class="status-item"><div class="status-item-label">Uptime</div><div class="status-item-value" id="uptimeVal">—</div></div>
           <div class="status-item"><div class="status-item-label">Claude CLI</div><div class="status-item-value" id="claudeVal">—</div></div>
           <div class="status-item"><div class="status-item-label">Emergency Stop</div><div class="status-item-value" id="emergencyVal">—</div></div>
@@ -124,24 +124,24 @@
       </div>
     </div>
 
-    <!-- IMPOSTAZIONI -->
+    <!-- SETTINGS -->
     <div class="section">
-      <div class="section-title">Impostazioni</div>
+      <div class="section-title">Settings</div>
       <div class="card">
         <div class="setting-row">
           <div class="setting-info">
-            <div class="setting-label">Porta</div>
-            <div class="setting-desc">Porta su cui gira la Web UI (default: 3333)</div>
+            <div class="setting-label">Port</div>
+            <div class="setting-desc">Port the Web UI runs on (default: 3333)</div>
           </div>
           <div class="setting-value">
             <input type="number" id="settingPort" min="1024" max="65535" placeholder="3333">
-            <button class="btn btn-ghost" onclick="saveSetting('MYCOW_PORT','settingPort')">Salva</button>
+            <button class="btn btn-ghost" onclick="saveSetting('MYCOW_PORT','settingPort')">Save</button>
           </div>
         </div>
         <div class="setting-row">
           <div class="setting-info">
             <div class="setting-label">Log level</div>
-            <div class="setting-desc">Livello di verbosità del daemon</div>
+            <div class="setting-desc">Daemon verbosity level</div>
           </div>
           <div class="setting-value">
             <select id="settingLogLevel">
@@ -150,7 +150,7 @@
               <option value="WARNING">WARNING</option>
               <option value="ERROR">ERROR</option>
             </select>
-            <button class="btn btn-ghost" onclick="saveSetting('MYCOW_LOG_LEVEL','settingLogLevel')">Salva</button>
+            <button class="btn btn-ghost" onclick="saveSetting('MYCOW_LOG_LEVEL','settingLogLevel')">Save</button>
           </div>
         </div>
       </div>
@@ -163,46 +163,46 @@
         <div class="setting-row">
           <div class="setting-info">
             <div class="setting-label">Telegram Bot Token</div>
-            <div class="setting-desc" id="telegramTokenStatus">Caricamento...</div>
+            <div class="setting-desc" id="telegramTokenStatus">Loading...</div>
           </div>
           <div class="setting-value">
-            <input type="password" id="telegramToken" placeholder="Nuovo token..." style="width:220px">
-            <button class="btn btn-ghost" onclick="saveSecret('TELEGRAM_BOT_TOKEN','telegramToken','telegramTokenStatus')">Salva</button>
+            <input type="password" id="telegramToken" placeholder="New token..." style="width:220px">
+            <button class="btn btn-ghost" onclick="saveSecret('TELEGRAM_BOT_TOKEN','telegramToken','telegramTokenStatus')">Save</button>
           </div>
         </div>
         <div class="setting-row">
           <div class="setting-info">
             <div class="setting-label">Telegram Chat ID</div>
-            <div class="setting-desc" id="telegramChatStatus">Caricamento...</div>
+            <div class="setting-desc" id="telegramChatStatus">Loading...</div>
           </div>
           <div class="setting-value">
-            <input type="text" id="telegramChat" placeholder="es. 123456789" style="width:160px">
-            <button class="btn btn-ghost" onclick="saveSecret('TELEGRAM_CHAT_ID','telegramChat','telegramChatStatus')">Salva</button>
+            <input type="text" id="telegramChat" placeholder="e.g. 123456789" style="width:160px">
+            <button class="btn btn-ghost" onclick="saveSecret('TELEGRAM_CHAT_ID','telegramChat','telegramChatStatus')">Save</button>
           </div>
         </div>
         <div class="setting-row">
           <div class="setting-info">
             <div class="setting-label">Default Telegram Agent</div>
-            <div class="setting-desc" id="telegramDefaultAgentStatus">Caricamento...</div>
+            <div class="setting-desc" id="telegramDefaultAgentStatus">Loading...</div>
           </div>
           <div class="setting-value">
-            <input type="text" id="telegramDefaultAgent" placeholder="es. morning-news" style="width:160px">
-            <button class="btn btn-ghost" onclick="saveSecret('TELEGRAM_DEFAULT_AGENT','telegramDefaultAgent','telegramDefaultAgentStatus')">Salva</button>
+            <input type="text" id="telegramDefaultAgent" placeholder="e.g. morning-news" style="width:160px">
+            <button class="btn btn-ghost" onclick="saveSecret('TELEGRAM_DEFAULT_AGENT','telegramDefaultAgent','telegramDefaultAgentStatus')">Save</button>
           </div>
         </div>
         <div class="setting-row">
           <div class="setting-info">
             <div class="setting-label">Brave API Key</div>
-            <div class="setting-desc" id="braveKeyStatus">Caricamento...</div>
+            <div class="setting-desc" id="braveKeyStatus">Loading...</div>
           </div>
           <div class="setting-value">
-            <input type="password" id="braveKey" placeholder="Nuova chiave..." style="width:220px">
-            <button class="btn btn-ghost" onclick="saveSecret('BRAVE_API_KEY','braveKey','braveKeyStatus')">Salva</button>
+            <input type="password" id="braveKey" placeholder="New key..." style="width:220px">
+            <button class="btn btn-ghost" onclick="saveSecret('BRAVE_API_KEY','braveKey','braveKeyStatus')">Save</button>
           </div>
         </div>
       </div>
       <div style="font-size:12px;color:var(--color-text-muted);margin-top:var(--space-2)">
-        I secrets vengono scritti nel file <code style="color:var(--color-info)">.env</code> e non vengono mai restituiti dall'API.
+        Secrets are written to the <code style="color:var(--color-info)">.env</code> file and are never returned by the API.
       </div>
     </div>
 
@@ -213,7 +213,7 @@
         <div class="setting-row">
           <div class="setting-info">
             <div class="setting-label">Emergency Stop</div>
-            <div class="setting-desc">Ferma immediatamente tutti i cron e heartbeat attivi</div>
+            <div class="setting-desc">Immediately stop all active crons and heartbeats</div>
           </div>
           <button class="btn btn-danger" onclick="triggerEmergencyStop()">⬛ Stop All</button>
         </div>
@@ -251,9 +251,9 @@
       document.getElementById('statusVal').textContent = d.emergency_stop ? 'Emergency Stop' : 'Online';
       document.getElementById('statusVal').className = `status-item-value ${d.emergency_stop ? 'err' : 'ok'}`;
       document.getElementById('uptimeVal').textContent = d.uptime_seconds != null ? fmtUptime(d.uptime_seconds) : '—';
-      document.getElementById('claudeVal').textContent = d.claude_available ? 'Disponibile' : 'Non trovato';
+      document.getElementById('claudeVal').textContent = d.claude_available ? 'Available' : 'Not found';
       document.getElementById('claudeVal').className = `status-item-value ${d.claude_available ? 'ok' : 'err'}`;
-      document.getElementById('emergencyVal').textContent = d.emergency_stop ? 'ATTIVO' : 'No';
+      document.getElementById('emergencyVal').textContent = d.emergency_stop ? 'ACTIVE' : 'No';
       document.getElementById('emergencyVal').className = `status-item-value ${d.emergency_stop ? 'err' : 'ok'}`;
     } catch {
       document.getElementById('daemonDot').className = 'daemon-dot offline';
@@ -270,23 +270,23 @@
       if (data.MYCOW_PORT) document.getElementById('settingPort').value = data.MYCOW_PORT;
       if (data.MYCOW_LOG_LEVEL) document.getElementById('settingLogLevel').value = data.MYCOW_LOG_LEVEL;
 
-      // Status secrets (write-only — mostra solo configurato/no)
-      const setTxt = '<span style="color:var(--color-success)">✓ Configurato</span>';
-      const notSetTxt = '<span style="color:var(--color-text-muted)">Non configurato</span>';
+      // Status secrets (write-only — shows only configured/not)
+      const setTxt = '<span style="color:var(--color-success)">✓ Configured</span>';
+      const notSetTxt = '<span style="color:var(--color-text-muted)">Not configured</span>';
       document.getElementById('telegramTokenStatus').innerHTML = data['TELEGRAM_BOT_TOKEN__set'] ? setTxt : notSetTxt;
       document.getElementById('braveKeyStatus').innerHTML = data['BRAVE_API_KEY__set'] ? setTxt : notSetTxt;
 
-      // TELEGRAM_CHAT_ID è readable
+      // TELEGRAM_CHAT_ID is readable
       const chatId = data['TELEGRAM_CHAT_ID'] || '';
       document.getElementById('telegramChatStatus').innerHTML = chatId
         ? `<span style="color:var(--color-success)">✓ ${chatId}</span>`
-        : '<span style="color:var(--color-text-muted)">Non configurato</span>';
+        : '<span style="color:var(--color-text-muted)">Not configured</span>';
 
-      // TELEGRAM_DEFAULT_AGENT è readable
+      // TELEGRAM_DEFAULT_AGENT is readable
       const defaultAgent = data['TELEGRAM_DEFAULT_AGENT'] || '';
       document.getElementById('telegramDefaultAgentStatus').innerHTML = defaultAgent
         ? `<span style="color:var(--color-success)">✓ ${defaultAgent}</span>`
-        : '<span style="color:var(--color-text-muted)">Non configurato (usa il primo agente in ordine alfabetico)</span>';
+        : '<span style="color:var(--color-text-muted)">Not configured (uses first agent alphabetically)</span>';
     } catch {}
   }
 
