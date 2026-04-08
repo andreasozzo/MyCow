@@ -61,26 +61,39 @@ try {
 
 Write-Step "Download MyCow"
 
+$freshInstall = $true
 if (Test-Path $INSTALL_DIR) {
-    Write-Warn "Folder $INSTALL_DIR already exists. Updating dependencies only."
-} else {
-    $zipPath = Join-Path $env:TEMP "mycow.zip"
-    $extractPath = Join-Path $env:TEMP "mycow_extract"
-
-    Write-Host "   Downloading from $MYCOW_REPO_URL ..."
-    Invoke-WebRequest -Uri $MYCOW_REPO_URL -OutFile $zipPath -UseBasicParsing
-
-    if (Test-Path $extractPath) { Remove-Item $extractPath -Recurse -Force }
-    Expand-Archive -Path $zipPath -DestinationPath $extractPath
-
-    # GitHub zip extracts into a subfolder (e.g. mycow-main)
-    $innerDir = Get-ChildItem $extractPath | Where-Object { $_.PSIsContainer } | Select-Object -First 1
-    Move-Item $innerDir.FullName $INSTALL_DIR
-
-    Remove-Item $zipPath -Force
-    Remove-Item $extractPath -Recurse -Force
-    Write-Ok "Extracted to $INSTALL_DIR"
+    Write-Warn "MyCow is already installed. Updating web files and dependencies..."
+    $freshInstall = $false
 }
+
+$zipPath = Join-Path $env:TEMP "mycow.zip"
+$extractPath = Join-Path $env:TEMP "mycow_extract"
+
+Write-Host "   Downloading from $MYCOW_REPO_URL ..."
+Invoke-WebRequest -Uri $MYCOW_REPO_URL -OutFile $zipPath -UseBasicParsing
+
+if (Test-Path $extractPath) { Remove-Item $extractPath -Recurse -Force }
+Expand-Archive -Path $zipPath -DestinationPath $extractPath
+
+# GitHub zip extracts into a subfolder (e.g. mycow-main)
+$innerDir = Get-ChildItem $extractPath | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+
+if ($freshInstall) {
+    Move-Item $innerDir.FullName $INSTALL_DIR
+    Write-Ok "Extracted to $INSTALL_DIR"
+} else {
+    # Update web files
+    $webSrcPath = Join-Path $innerDir.FullName "web"
+    $webDstPath = Join-Path $INSTALL_DIR "web"
+    if (Test-Path $webSrcPath) {
+        Copy-Item -Path "$webSrcPath\*" -Destination $webDstPath -Force -Recurse
+        Write-Ok "Updated web files"
+    }
+}
+
+Remove-Item $zipPath -Force
+Remove-Item $extractPath -Recurse -Force
 
 # --- 4. Create venv -------------------------------------------------------
 

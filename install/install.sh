@@ -21,7 +21,7 @@ if [ -t 1 ]; then
     step()  { echo ""; echo -e "\033[36m>> $1\033[0m"; }
     ok()    { echo -e "   \033[32mOK\033[0m  $1"; }
     warn()  { echo -e "   \033[33m!\033[0m   $1"; }
-    fail()  { echo -e "\n\033[31m[ERRORE] $1\033[0m" >&2; exit 1; }
+    fail()  { echo -e "\n\033[31m[ERROR] $1\033[0m" >&2; exit 1; }
 fi
 
 # --- 1. Check Python -------------------------------------------------
@@ -72,39 +72,51 @@ if ! command -v unzip &>/dev/null; then
     fi
 fi
 
+FRESH_INSTALL=true
+UPDATE_WEB_FILES=false
+
 if [ -d "$INSTALL_DIR" ]; then
     # If folder exists but requirements.txt is missing, it's a broken install
     if [ ! -f "$INSTALL_DIR/requirements.txt" ]; then
         warn "Broken install found. Removing and re-downloading..."
         rm -rf "$INSTALL_DIR"
     else
-        warn "Folder $INSTALL_DIR already exists. Updating dependencies only."
+        FRESH_INSTALL=false
+        warn "MyCow is already installed. Updating web files and dependencies..."
+        UPDATE_WEB_FILES=true
     fi
 fi
 
-if [ ! -d "$INSTALL_DIR" ]; then
-    TMP_ZIP=$(mktemp /tmp/mycow_XXXXXX.zip)
-    TMP_EXTRACT=$(mktemp -d /tmp/mycow_extract_XXXXXX)
+TMP_ZIP=$(mktemp /tmp/mycow_XXXXXX.zip)
+TMP_EXTRACT=$(mktemp -d /tmp/mycow_extract_XXXXXX)
 
-    echo "   Downloading from $MYCOW_REPO_URL ..."
-    if command -v curl &>/dev/null; then
-        curl -fsSL "$MYCOW_REPO_URL" -o "$TMP_ZIP"
-    elif command -v wget &>/dev/null; then
-        wget -q "$MYCOW_REPO_URL" -O "$TMP_ZIP"
-    else
-        fail "curl or wget required for download."
-    fi
+echo "   Downloading from $MYCOW_REPO_URL ..."
+if command -v curl &>/dev/null; then
+    curl -fsSL "$MYCOW_REPO_URL" -o "$TMP_ZIP"
+elif command -v wget &>/dev/null; then
+    wget -q "$MYCOW_REPO_URL" -O "$TMP_ZIP"
+else
+    fail "curl or wget required for download."
+fi
 
-    unzip -q "$TMP_ZIP" -d "$TMP_EXTRACT"
+unzip -q "$TMP_ZIP" -d "$TMP_EXTRACT"
 
-    # GitHub zip extracts into a subfolder (e.g. MyCow-master)
-    INNER_DIR=$(find "$TMP_EXTRACT" -maxdepth 1 -mindepth 1 -type d | head -1)
+# GitHub zip extracts into a subfolder (e.g. MyCow-master)
+INNER_DIR=$(find "$TMP_EXTRACT" -maxdepth 1 -mindepth 1 -type d | head -1)
+
+if [ "$FRESH_INSTALL" = true ]; then
     mv "$INNER_DIR" "$INSTALL_DIR"
-
-    rm -f "$TMP_ZIP"
-    rm -rf "$TMP_EXTRACT"
     ok "Extracted to $INSTALL_DIR"
+else
+    # Update web files
+    if [ -d "$INNER_DIR/web" ]; then
+        cp -r "$INNER_DIR/web"/* "$INSTALL_DIR/web/" 2>/dev/null || true
+        ok "Updated web files"
+    fi
 fi
+
+rm -f "$TMP_ZIP"
+rm -rf "$TMP_EXTRACT"
 
 # --- 4. Create venv -------------------------------------------------------
 
