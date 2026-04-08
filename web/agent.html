@@ -284,6 +284,29 @@
   .toast.show { transform: translateY(0); opacity: 1; }
   .toast.success { border-color: var(--color-success); color: var(--color-success); }
   .toast.error { border-color: var(--color-error); color: var(--color-error); }
+
+  /* FILE EDITOR */
+  .file-tabs { display: flex; gap: var(--space-1); margin-bottom: var(--space-3); flex-wrap: wrap; }
+  .file-tab {
+    padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border); background: transparent;
+    color: var(--color-text-secondary); cursor: pointer; font-size: 12px; font-family: inherit;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+  }
+  .file-tab:hover { color: var(--color-text-primary); background: var(--color-surface-2); }
+  .file-tab.active {
+    background: var(--color-primary-pale); color: var(--color-primary-light);
+    border-color: var(--color-primary);
+  }
+  .file-editor {
+    width: 100%; background: var(--color-bg); color: var(--color-text-primary);
+    border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+    padding: var(--space-3); font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px; line-height: 1.6; resize: vertical; min-height: 320px;
+    transition: border-color 0.15s;
+  }
+  .file-editor:focus { outline: none; border-color: var(--color-primary-light); }
+  .file-actions { display: flex; justify-content: flex-end; margin-top: var(--space-3); }
 </style>
 </head>
 <body>
@@ -506,9 +529,13 @@
   function goPage(p) { logPage = p; rerenderLogs(); }
 
   function rerenderLogs() {
-    document.getElementById('logsSection').outerHTML = renderLogs().replace('<div class="section">', '<div class="section" id="logsSection">');
-    // re-assign id after replacement
-    document.querySelectorAll('.section')[1].id = 'logsSection';
+    const logsEl = document.getElementById('logsSection');
+    if (!logsEl) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = renderLogs();
+    const newSection = tmp.firstElementChild;
+    newSection.id = 'logsSection';
+    logsEl.replaceWith(newSection);
   }
 
   // ── Chat ──
@@ -627,6 +654,68 @@
     }, 2000);
   }
 
+  // ── File editor ──
+  let activeFilePath = 'CLAUDE.md';
+  const FILE_TABS = [
+    { path: 'CLAUDE.md',            label: 'CLAUDE.md' },
+    { path: 'cron.yaml',            label: 'cron.yaml' },
+    { path: 'memory/core.md',       label: 'memory/core' },
+    { path: 'memory/working.md',    label: 'memory/working' },
+    { path: 'memory/decisions.md',  label: 'memory/decisions' },
+  ];
+
+  function renderFiles() {
+    const tabsHtml = FILE_TABS.map(t => `
+      <button class="file-tab ${activeFilePath === t.path ? 'active' : ''}"
+        onclick="switchFileTab('${t.path}')">${t.label}</button>`).join('');
+    return `
+      <div class="section">
+        <div class="section-title">📄 Files</div>
+        <div class="card">
+          <div class="file-tabs">${tabsHtml}</div>
+          <textarea class="file-editor" id="fileEditor" spellcheck="false"></textarea>
+          <div class="file-actions">
+            <button class="btn btn-primary" onclick="saveFile()">Save</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  async function switchFileTab(path) {
+    activeFilePath = path;
+    // Re-render tabs to update active state
+    const tabsEl = document.querySelector('.file-tabs');
+    if (tabsEl) {
+      tabsEl.innerHTML = FILE_TABS.map(t => `
+        <button class="file-tab ${activeFilePath === t.path ? 'active' : ''}"
+          onclick="switchFileTab('${t.path}')">${t.label}</button>`).join('');
+    }
+    await loadFile(path);
+  }
+
+  async function loadFile(path) {
+    try {
+      const res = await fetch(`/api/agents/${agentName}/file?path=${encodeURIComponent(path)}`);
+      if (!res.ok) { showToast('Error loading file', 'error'); return; }
+      const data = await res.json();
+      const el = document.getElementById('fileEditor');
+      if (el) el.value = data.content || '';
+    } catch { showToast('Network error', 'error'); }
+  }
+
+  async function saveFile() {
+    const el = document.getElementById('fileEditor');
+    if (!el) return;
+    try {
+      const res = await fetch(`/api/agents/${agentName}/file?path=${encodeURIComponent(activeFilePath)}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({content: el.value}),
+      });
+      showToast(res.ok ? `${activeFilePath} saved` : 'Save error', res.ok ? 'success' : 'error');
+    } catch { showToast('Network error', 'error'); }
+  }
+
   // ── Actions ──
   async function runAgent() {
     try {
@@ -672,12 +761,14 @@
       if (document.getElementById('mainContent')) {
         document.getElementById('mainContent').innerHTML =
           renderConfig(agent) +
+          renderFiles() +
           `<div id="logsSection"></div>` +
           renderChat();
         document.getElementById('logsSection').outerHTML = renderLogs().replace('<div class="section">', '<div class="section" id="logsSection">');
-        document.querySelectorAll('.section')[1].id = 'logsSection';
+        document.querySelectorAll('.section')[2].id = 'logsSection';
         document.getElementById('mainContent').removeAttribute('id');
         loadChatHistory();
+        loadFile(activeFilePath);
       } else {
         // Partial update: config + badge only
         const configEl = document.querySelector('.section');

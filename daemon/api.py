@@ -25,14 +25,20 @@ EMERGENCY_STOP_FILE = ROOT_DIR / "EMERGENCY_STOP"
 WEB_DIR = ROOT_DIR / "web"
 ENV_FILE = ROOT_DIR / ".env"
 
+AGENT_EDITABLE_FILES = {
+    "CLAUDE.md", "cron.yaml",
+    "memory/core.md", "memory/working.md", "memory/decisions.md",
+}
+
 _start_time = time.monotonic()
 
 
 # .env fields readable via API (no secrets)
-READABLE_SETTINGS = {"MYCOW_PORT", "MYCOW_LOG_LEVEL"}
+READABLE_SETTINGS = {"MYCOW_PORT", "MYCOW_LOG_LEVEL", "TELEGRAM_DEFAULT_AGENT"}
 # .env fields writable via API — includes secrets (write-only, never returned)
 WRITABLE_SETTINGS = {"MYCOW_PORT", "MYCOW_LOG_LEVEL",
-                     "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "BRAVE_API_KEY"}
+                     "TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID", "BRAVE_API_KEY",
+                     "TELEGRAM_DEFAULT_AGENT"}
 # Secrets: writable but not returned by GET /api/settings
 SECRET_SETTINGS = {"TELEGRAM_BOT_TOKEN", "BRAVE_API_KEY"}
 
@@ -331,6 +337,33 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None, log_buffer=Non
             if h["name"] == name:
                 return _ok(h)
         return _ok({"name": name, "status": "no_heartbeat_configured"})
+
+    @app.route("/api/agents/<name>/file")
+    def agent_file_get(name):
+        agent_dir = AGENTS_DIR / name
+        if not agent_dir.exists():
+            return _err(f"Agent '{name}' not found", 404)
+        rel = request.args.get("path", "")
+        if rel not in AGENT_EDITABLE_FILES:
+            return _err(f"File not allowed: {rel}", 400)
+        fpath = agent_dir / rel
+        content = fpath.read_text(encoding="utf-8") if fpath.exists() else ""
+        return _ok({"path": rel, "content": content})
+
+    @app.route("/api/agents/<name>/file", methods=["PUT"])
+    def agent_file_put(name):
+        agent_dir = AGENTS_DIR / name
+        if not agent_dir.exists():
+            return _err(f"Agent '{name}' not found", 404)
+        rel = request.args.get("path", "")
+        if rel not in AGENT_EDITABLE_FILES:
+            return _err(f"File not allowed: {rel}", 400)
+        data = request.get_json(silent=True) or {}
+        content = data.get("content", "")
+        fpath = agent_dir / rel
+        fpath.parent.mkdir(parents=True, exist_ok=True)
+        fpath.write_text(content, encoding="utf-8")
+        return _ok({"message": f"{rel} saved"})
 
     # ------------------------------------------------------------------
     # Skills

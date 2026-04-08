@@ -182,6 +182,16 @@
         </div>
         <div class="setting-row">
           <div class="setting-info">
+            <div class="setting-label">Default Telegram Agent</div>
+            <div class="setting-desc" id="telegramDefaultAgentStatus">Caricamento...</div>
+          </div>
+          <div class="setting-value">
+            <input type="text" id="telegramDefaultAgent" placeholder="es. morning-news" style="width:160px">
+            <button class="btn btn-ghost" onclick="saveSecret('TELEGRAM_DEFAULT_AGENT','telegramDefaultAgent','telegramDefaultAgentStatus')">Salva</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
             <div class="setting-label">Brave API Key</div>
             <div class="setting-desc" id="braveKeyStatus">Caricamento...</div>
           </div>
@@ -271,6 +281,12 @@
       document.getElementById('telegramChatStatus').innerHTML = chatId
         ? `<span style="color:var(--color-success)">✓ ${chatId}</span>`
         : '<span style="color:var(--color-text-muted)">Non configurato</span>';
+
+      // TELEGRAM_DEFAULT_AGENT è readable
+      const defaultAgent = data['TELEGRAM_DEFAULT_AGENT'] || '';
+      document.getElementById('telegramDefaultAgentStatus').innerHTML = defaultAgent
+        ? `<span style="color:var(--color-success)">✓ ${defaultAgent}</span>`
+        : '<span style="color:var(--color-text-muted)">Non configurato (usa il primo agente in ordine alfabetico)</span>';
     } catch {}
   }
 

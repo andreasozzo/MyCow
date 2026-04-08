@@ -189,13 +189,20 @@ class TelegramBridge:
                     continue
 
         if not target_agent:
-            # Fallback: use the first available agent
-            dirs = [d for d in AGENTS_DIR.iterdir() if d.is_dir()] if AGENTS_DIR.exists() else []
-            if dirs:
-                target_agent = dirs[0].name
+            # Prefer TELEGRAM_DEFAULT_AGENT from env, then first alphabetically
+            default = os.environ.get("TELEGRAM_DEFAULT_AGENT", "").strip()
+            if default and AGENTS_DIR.exists() and (AGENTS_DIR / default).is_dir():
+                target_agent = default
             else:
-                await update.message.reply_text("No agents configured. Use /agents.")
-                return
+                dirs = sorted(
+                    [d for d in AGENTS_DIR.iterdir() if d.is_dir()],
+                    key=lambda d: d.name
+                ) if AGENTS_DIR.exists() else []
+                if dirs:
+                    target_agent = dirs[0].name
+                else:
+                    await update.message.reply_text("No agents configured. Use /agents.")
+                    return
 
         await update.message.reply_text(f"Inoltro a *{target_agent}*...", parse_mode="Markdown")
         threading.Thread(
