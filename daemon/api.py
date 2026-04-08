@@ -105,7 +105,7 @@ def _agent_skills(name: str) -> list[str]:
     return skills
 
 
-def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
+def create_app(scheduler=None, heartbeat_mgr=None, telegram=None, log_buffer=None) -> Flask:
     app = Flask(__name__, static_folder=None)
     app.config["JSON_SORT_KEYS"] = False
 
@@ -122,8 +122,25 @@ def create_app(scheduler=None, heartbeat_mgr=None, telegram=None) -> Flask:
     @app.route("/<path:filename>")
     def static_files(filename):
         if WEB_DIR.exists():
-            return send_from_directory(str(WEB_DIR), filename)
+            file_path = WEB_DIR / filename
+            if file_path.exists() and file_path.is_file():
+                return send_from_directory(str(WEB_DIR), filename)
         return _err("File not found", 404)
+
+    # ------------------------------------------------------------------
+    # Daemon Logs
+    # ------------------------------------------------------------------
+
+    @app.route("/api/logs")
+    def get_daemon_logs():
+        if log_buffer is None:
+            return _ok([])
+        limit = min(int(request.args.get("limit", 200)), 1000)
+        level = request.args.get("level", "").upper()
+        logs = list(log_buffer)
+        if level and level in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
+            logs = [l for l in logs if l["level"] == level]
+        return _ok(list(logs)[-limit:])
 
     # ------------------------------------------------------------------
     # Health

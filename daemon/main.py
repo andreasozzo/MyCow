@@ -9,6 +9,8 @@ import os
 import socket
 import sys
 import time
+from collections import deque
+from datetime import datetime
 from pathlib import Path
 
 # Ensures the project root is in sys.path when main.py is run
@@ -27,6 +29,20 @@ except ImportError:
 
 # --- Logging ----------------------------------------------------------
 
+LOG_BUFFER: deque = deque(maxlen=1000)
+
+class MemoryLogHandler(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            LOG_BUFFER.append({
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "level": record.levelname,
+                "logger": record.name,
+                "message": self.format(record),
+            })
+        except Exception:
+            pass
+
 def setup_logging(level: str = "INFO") -> logging.Logger:
     log_level = getattr(logging, level.upper(), logging.INFO)
     logging.basicConfig(
@@ -34,6 +50,9 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
         format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    mem_handler = MemoryLogHandler()
+    mem_handler.setLevel(log_level)
+    logging.getLogger().addHandler(mem_handler)
     return logging.getLogger("mycow")
 
 logger = setup_logging(os.environ.get("MYCOW_LOG_LEVEL", "INFO"))
@@ -172,6 +191,7 @@ def cmd_start(args):
                 scheduler=sched_instance,
                 heartbeat_mgr=hb_instance,
                 telegram=tg_instance,
+                log_buffer=LOG_BUFFER,
             )
             flask_app.run(host="127.0.0.1", port=port, use_reloader=False)
         except Exception as e:

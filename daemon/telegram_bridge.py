@@ -107,8 +107,14 @@ class TelegramBridge:
     # ------------------------------------------------------------------
 
     def _run_polling(self):
+        import asyncio
         import time as _time
         from telegram.ext import Application, CommandHandler, MessageHandler, filters
+
+        # Create a new event loop for this thread
+        asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
         backoff = 5
         while not self._stop_event.is_set():
@@ -126,7 +132,9 @@ class TelegramBridge:
                 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._handle_message))
 
                 logger.info("Telegram bot listening...")
-                app.run_polling(drop_pending_updates=True)
+                loop.run_until_complete(
+                    app.run_polling(drop_pending_updates=True)
+                )
 
                 if self._stop_event.is_set():
                     break
@@ -138,6 +146,8 @@ class TelegramBridge:
 
             self._stop_event.wait(backoff)
             backoff = min(backoff * 2, 60)
+
+        loop.close()
 
     def _is_allowed(self, chat_id: str) -> bool:
         if not self._allowed_chat_ids:
