@@ -1,0 +1,13 @@
+name: etoro-reader
+version: 1.0.0
+description: Legge portfolio e dati strumenti da eToro (read-only)
+type: mcp
+requires_env: []
+mcp:
+  command: npx
+  args:
+    - etoroportfoliomcp
+tools:
+  - fetch_etoro_portfolio    # portfolio per username
+  - fetch_instrument_details # dettagli strumento per ID
+  - search_instruments       # cerca strumenti per nome

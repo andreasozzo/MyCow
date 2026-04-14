@@ -127,14 +127,20 @@ def run_agent(
 
     cron_config = cron_config or {}
     allowed_tools = _resolve_allowed_tools(cron_config)
+    max_turns = str(cron_config.get("max_turns", 25))
+
+    # Use bypassPermissions when bash is explicitly allowed — allowedTools already
+    # constrains what can run, so we don't need interactive prompts on top.
+    has_bash = cron_config.get("permissions", {}).get("bash", False)
+    permission_mode = "bypassPermissions" if has_bash else "acceptEdits"
 
     cmd = [
         "claude",
         "-p", prompt,
         "--allowedTools", allowed_tools,
         "--output-format", "json",
-        "--max-turns", "10",
-        "--permission-mode", "acceptEdits",
+        "--max-turns", max_turns,
+        "--permission-mode", permission_mode,
     ]
     if model:
         cmd += ["--model", model]
@@ -144,7 +150,7 @@ def run_agent(
         "--append-system-prompt",
         "To create or modify files ALWAYS use the Write tool, never Bash. "
         "To read files use Read, never Bash. "
-        "Use Bash only for operations you cannot do with Read/Write. "
+        "Use Bash only for operations that require it (e.g. running Python scripts). "
         "DO NOT look for tokens, credentials, or .env files — they are not in your environment and you cannot access them. "
         "DO NOT attempt to send Telegram messages directly: the daemon sends them for you automatically. "
         "To communicate something via Telegram simply write the text as output — the daemon delivers it.",
@@ -220,10 +226,10 @@ def run_agent(
             result["session_id"] = session_id
         logger.info("[%s] Completato in %.1fs", agent_name, duration)
 
-        # Auto-notify Telegram only for cron/heartbeat — chat and manual handle their own responses
+        # Auto-notify Telegram for cron, heartbeat, and manual (not chat — chat replies inline)
         if (cron_config.get("permissions", {}).get("telegram_without_approval")
                 and output_text
-                and trigger not in ("chat", "manual")):
+                and trigger != "chat"):
             _notify_telegram(agent_name, output_text, cron_config)
             result["telegram_sent"] = True
 
@@ -318,13 +324,19 @@ def _notify_telegram(agent_name: str, message: str, cron_config: dict) -> None:
     try:
         import asyncio
         import telegram
+        text = f"[{agent_name}]\n{message}"[:4096]
         async def _send():
             bot = telegram.Bot(token=token)
-            await bot.send_message(
-                chat_id=chat_id,
-                text=f"[{agent_name}]\n{message}"[:4096],
-                parse_mode="Markdown",
-            )
-        asyncio.run(_send())
+            # Try without parse_mode first to avoid Markdown escaping errors
+            try:
+                await bot.send_message(chat_id=chat_id, text=text)
+            except Exception:
+                # Fallback: truncate and retry plain
+                await bot.send_message(chat_id=chat_id, text=text[:1000])
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(_send())
+        finally:
+            loop.close()
     except Exception as e:
-        logger.debug("Telegram notification failed: %s", e)
+        logger.error("Telegram notification failed: %s", e)

@@ -1,0 +1,12 @@
+name: technical-analysis
+version: 1.0.0
+description: >
+  Calcola indicatori tecnici (RSI, SMA, MACD, Bollinger, Volume) per ETF commodities.
+  Usa yfinance per i dati storici e ta-lib per i calcoli.
+  NON usa LLM per i calcoli, solo librerie matematiche deterministiche.
+type: script
+requires_env: []
+mcp_server: null
+command: python3
+args:
+  - skills/technical-analysis/analyze.py

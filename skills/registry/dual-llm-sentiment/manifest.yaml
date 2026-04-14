@@ -1,0 +1,14 @@
+name: dual-llm-sentiment
+version: 1.0.0
+description: >
+  Analizza news su commodities con doppio LLM (Claude CLI + OpenAI GPT-4o-mini).
+  Confronta i due sentiment e restituisce consenso.
+  Usa Brave Search per le news. Claude gira via CLI (gratuito), OpenAI via API.
+type: script
+requires_env:
+  - BRAVE_API_KEY
+  - OPENAI_API_KEY
+mcp_server: null
+command: python3
+args:
+  - skills/dual-llm-sentiment/sentiment.py
